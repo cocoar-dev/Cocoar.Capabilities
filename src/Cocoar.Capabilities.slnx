@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Cocoar.Capabilities.Benchmarks/Cocoar.Capabilities.Benchmarks.csproj" />
+  <Project Path="Cocoar.Capabilities.Tests/Cocoar.Capabilities.Tests.csproj" />
+  <Project Path="Cocoar.Capabilities.Core.Tests/Cocoar.Capabilities.Core.Tests.csproj" />
+  <Project Path="Cocoar.Capabilities.Core/Cocoar.Capabilities.Core.csproj" />
+  <Project Path="Cocoar.Capabilities/Cocoar.Capabilities.csproj" />
+</Solution>
