@@ -3,7 +3,7 @@
 A **general-purpose capabilities system** for .NET that enables type-safe, composable capability attachment to any object. Perfect for cross-project extensibility without circular dependencies.
 
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/download/dotnet/9.0)
-[![Tests](https://img.shields.io/badge/tests-50%20passing-green)]()
+[![Tests](https://img.shields.io/badge/tests-passing-green)]()
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 
 ## 🎯 What is it?
@@ -422,7 +422,7 @@ library.Configure(bag);
 
 The library includes comprehensive tests covering all scenarios:
 
-- **50 tests** covering core functionality, edge cases, and performance
+- **Comprehensive unit tests** covering core functionality, edge cases, and performance
 - **100% coverage** on core types
 - **Thread safety tests** for concurrent access
 - **Performance tests** validating zero-allocation claims
@@ -456,7 +456,7 @@ Contributions welcome! The library is designed to be:
 
 ## 📄 License
 
-[MIT License](LICENSE) - Use it anywhere, commercial or personal.
+[Apache-2.0 License](LICENSE) - Use it anywhere, commercial or personal.
 
 ---
 

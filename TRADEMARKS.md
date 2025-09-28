@@ -1,16 +1,16 @@
 # Trademarks
 
-“Cocoar”, “Cocoar.Configuration”, the Cocoar logo, and related marks are trademarks of COCOAR e.U.
+“Cocoar”, “Cocoar.Capabilities”, the Cocoar logo, and related marks are trademarks of COCOAR e.U.
 
 ## Permitted Use
 You may:
-- Factually state that your project “uses” or “is built with” Cocoar.Configuration.
+- Factually state that your project “uses” or “is built with” Cocoar.Capabilities.
 - Link to the official repository, documentation, or website.
 - Use unmodified logos/screenshots in comparative or educational material.
 
 ## Restricted Use
 You may not:
-- Present Cocoar or Cocoar.Configuration as if it endorses your fork, distribution, or service.
+- Present Cocoar or Cocoar.Capabilities as if it endorses your fork, distribution, or service.
 - Use the Cocoar name or logo as the primary branding of a derivative product.
 - Modify the Cocoar logo and present it as an official mark.
 

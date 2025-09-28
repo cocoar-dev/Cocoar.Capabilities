@@ -1,8 +1,8 @@
-Cocoar.Configuration
+Cocoar.Capabilities
 Copyright (c) 2025 COCOAR e.U.
 
-Powerful layered configuration for .NET
-Simple • Strongly typed • Reactive
+High-performance capability composition for .NET
+Extensible • Type-safe • Zero-allocation hot paths
 
 Licensed under the Apache License, Version 2.0 (the "License");
 You may not use this project except in compliance with the License.
