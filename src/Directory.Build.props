@@ -41,7 +41,7 @@
     <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <WriteVersionInfoToBuildLog>true</WriteVersionInfoToBuildLog>
     <!-- Ensure GitVersion runs at the repo root (one level up from src/) -->
-    <GitVersionWorkingDirectory>$(MSBuildThisFileDirectory)..\</GitVersionWorkingDirectory>
+    <GitVersionWorkingDirectory>$(MSBuildThisFileDirectory)../</GitVersionWorkingDirectory>
   </PropertyGroup>
 
   <!-- ===== SOURCE LINK (for debugging) ===== -->
