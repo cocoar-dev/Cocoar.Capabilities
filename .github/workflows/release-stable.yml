@@ -24,6 +24,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -39,22 +40,28 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v3
 
-      - name: Verify tag matches version
+      - name: Extract version from tag
+        id: extract_version
+        shell: bash
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          SEMVER="${{ steps.gitversion.outputs.SemVer }}"
           echo "Release tag: $TAG"
-          echo "GitVersion calculated: $SEMVER"
-          if [ "v$SEMVER" != "$TAG" ]; then
-            echo "::error ::Tag ($TAG) does not match GitVersion ($SEMVER)"; exit 1;
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z\.-]+)?$ ]]; then
+            echo "::error ::Tag must be like vX.Y.Z or vX.Y.Z-<pre>"; exit 1;
           fi
+          SEMVER="${TAG#v}"
+          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
         run: dotnet restore
         working-directory: ./src
 
       - name: Build solution
-        run: dotnet build -c Release --no-restore
+        run: >
+          dotnet build -c Release --no-restore
+          /p:EnableGitVersionTask=false
+          /p:UpdateAssemblyInfo=false
+          /p:Version=${{ steps.extract_version.outputs.semver }}
         working-directory: ./src
 
       - name: Run tests
@@ -62,7 +69,14 @@ jobs:
         working-directory: ./src
 
       - name: Pack NuGet packages (incl. symbols)
-        run: dotnet pack -c Release --no-restore /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg -o ../artifacts
+        run: >
+          dotnet pack -c Release --no-restore
+          /p:EnableGitVersionTask=false
+          /p:UpdateAssemblyInfo=false
+          /p:Version=${{ steps.extract_version.outputs.semver }}
+          /p:PackageVersion=${{ steps.extract_version.outputs.semver }}
+          /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
+          -o ../artifacts
         working-directory: ./src
 
       - name: Ensure packages exist
