@@ -30,25 +30,18 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Build to generate GitVersion.MsBuild props
-        run: |
-          dotnet restore ./Cocoar.Capabilities.slnx
-          dotnet build -c Release ./Cocoar.Capabilities.slnx > /dev/null
-        working-directory: ./src
-
-      - name: Verify tag matches version (from MSBuild)
-        id: verify_tag
+      - name: Extract version from tag
+        id: extract_version
+        shell: bash
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          SEMVER=$(grep -oP '<GitVersion_SemVer>\K[^<]+' ./Cocoar.Capabilities/obj/Release/*/GitVersion.MsBuild.props | head -n1 || true)
           echo "Release tag: $TAG"
-          echo "MSBuild GitVersion: ${SEMVER:-unknown}"
-          if [ -z "$SEMVER" ]; then echo "::error ::Could not determine version from MSBuild props"; exit 1; fi
-          if [ "v$SEMVER" != "$TAG" ]; then
-            echo "::error ::Tag ($TAG) does not match MSBuild GitVersion ($SEMVER)"; exit 1;
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z\.-]+)?$ ]]; then
+            echo "::error ::Tag must be like vX.Y.Z or vX.Y.Z-<pre>"); exit 1;
           fi
-          echo "semver=$SEMVER" >> $GITHUB_OUTPUT
-        working-directory: ./src
+          SEMVER="${TAG#v}"
+          echo "SemVer: $SEMVER"
+          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
         run: dotnet restore ./Cocoar.Capabilities.slnx
@@ -66,7 +59,7 @@ jobs:
         run: >
           dotnet pack ./Cocoar.Capabilities/Cocoar.Capabilities.csproj -c Release --no-restore
           /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
-          /p:Version=${{ steps.verify_tag.outputs.semver }}
+          /p:Version=${{ steps.extract_version.outputs.semver }}
           -o ../artifacts
         working-directory: ./src
 
@@ -79,7 +72,7 @@ jobs:
       - name: Upload artifacts (audit)
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ steps.verify_tag.outputs.semver }}
+          name: packages-${{ steps.extract_version.outputs.semver }}
           path: artifacts
           retention-days: 7
 
