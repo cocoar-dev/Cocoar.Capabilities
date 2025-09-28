@@ -30,37 +30,39 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Extract version from tag
-        id: extract_version
-        shell: bash
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Calculate version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+
+      - name: Verify tag matches version
         run: |
           TAG="${{ github.event.release.tag_name }}"
+          SEMVER="${{ steps.gitversion.outputs.SemVer }}"
           echo "Release tag: $TAG"
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z\.-]+)?$ ]]; then
-            echo "::error ::Tag must be like vX.Y.Z or vX.Y.Z-<pre>"); exit 1;
+          echo "GitVersion calculated: $SEMVER"
+          if [ "v$SEMVER" != "$TAG" ]; then
+            echo "::error ::Tag ($TAG) does not match GitVersion ($SEMVER)"; exit 1;
           fi
-          SEMVER="${TAG#v}"
-          echo "SemVer: $SEMVER"
-          echo "semver=$SEMVER" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
-        run: dotnet restore ./Cocoar.Capabilities.slnx
+        run: dotnet restore
         working-directory: ./src
 
       - name: Build solution
-        run: dotnet build ./Cocoar.Capabilities.slnx -c Release --no-restore
+        run: dotnet build -c Release --no-restore
         working-directory: ./src
 
       - name: Run tests
-        run: dotnet test ./Cocoar.Capabilities.slnx -c Release --no-build --no-restore --verbosity normal
+        run: dotnet test -c Release --no-build --no-restore --verbosity normal
         working-directory: ./src
 
       - name: Pack NuGet packages (incl. symbols)
-        run: >
-          dotnet pack ./Cocoar.Capabilities/Cocoar.Capabilities.csproj -c Release --no-restore
-          /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
-          /p:Version=${{ steps.extract_version.outputs.semver }}
-          -o ../artifacts
+        run: dotnet pack -c Release --no-restore /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg -o ../artifacts
         working-directory: ./src
 
       - name: Ensure packages exist
@@ -72,7 +74,7 @@ jobs:
       - name: Upload artifacts (audit)
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ steps.extract_version.outputs.semver }}
+          name: packages-${{ steps.gitversion.outputs.SemVer }}
           path: artifacts
           retention-days: 7
 
