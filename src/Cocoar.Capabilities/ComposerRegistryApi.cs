@@ -1,0 +1,57 @@
+namespace Cocoar.Capabilities;
+
+public sealed class ComposerRegistryApi : IDisposable
+{
+    private readonly CapabilityScopeOptions options;
+    private readonly DefaultCapabilityRegistry _registry;
+    private bool _disposed;
+
+    public ComposerRegistryApi(CapabilityScopeOptions options, DefaultCapabilityRegistry sharedRegistry)
+    {
+        this.options = options;
+        _registry = sharedRegistry;
+    }
+
+    public bool TryGet<TSubject>(TSubject subject, out Composer? composer) where TSubject : notnull
+    {
+    return _registry.TryGetComposer(subject, out composer);
+    }
+
+    public Composer? GetOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    {
+        return TryGet(subject, out var composer) ? composer : null;
+    }
+
+    public Composer GetRequired<TSubject>(TSubject subject) where TSubject : notnull
+    {
+        if (TryGet(subject, out var composer) && composer != null)
+            return composer;
+
+        throw new InvalidOperationException($"No composer found for subject of type '{typeof(TSubject).Name}'.");
+    }
+
+    public void Register<TSubject>(TSubject subject, Composer composer, bool forceRegister = false) where TSubject : notnull
+    {
+        // Only register if scope allows it OR if explicitly forced (method override)
+        if (options.UseComposerRegistry || forceRegister)
+        {
+            _registry.RegisterComposer(composer);
+        }
+    }
+
+    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull
+    {
+        return _registry.Remove(subject);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        // Don't dispose the shared registry here - it's owned by CapabilityScope
+        _disposed = true;
+    }
+}

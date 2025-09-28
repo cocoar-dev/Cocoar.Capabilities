@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Relax analyzer rules for benchmarks -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>3</WarningLevel>
+    <NoWarn>$(NoWarn);CA1051;CA1001;CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Cocoar.Capabilities\Cocoar.Capabilities.csproj" />
+  </ItemGroup>
+
+</Project>
