@@ -1,0 +1,81 @@
+<Project>
+
+  <!-- ===== GLOBAL BUILD SETTINGS ===== -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>NU1903;NU1701</WarningsNotAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- Missing XML comments -->
+  </PropertyGroup>
+
+  <!-- ===== CI/CD BUILD OPTIMIZATIONS ===== -->
+  <PropertyGroup>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <!-- ===== PACKAGE METADATA ===== -->
+  <PropertyGroup>
+    <Authors>Cocoar Development Team</Authors>
+    <Company>Cocoar</Company>
+    <Product>Cocoar.Capabilities</Product>
+    <Copyright>Copyright © Cocoar Development Team $([System.DateTime]::Now.Year)</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/cocoar-dev/Cocoar.Capabilities</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cocoar-dev/Cocoar.Capabilities</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>capabilities;composition;patterns;architecture;dotnet;csharp</PackageTags>
+    <PackageReleaseNotes>See CHANGELOG.md for detailed release notes.</PackageReleaseNotes>
+    <Description>High-performance, zero-allocation capability composition library for .NET. Implements the Capability Composition pattern for building extensible, type-safe systems using Extension Object and Role Object architectural patterns.</Description>
+  </PropertyGroup>
+
+  <!-- ===== VERSIONING (GitVersion) ===== -->
+  <PropertyGroup>
+    <EnableGitVersionTask>true</EnableGitVersionTask>
+    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
+    <WriteVersionInfoToBuildLog>true</WriteVersionInfoToBuildLog>
+    <!-- Ensure GitVersion runs at the repo root (one level up from src/) -->
+    <GitVersionWorkingDirectory>$(MSBuildThisFileDirectory)..\</GitVersionWorkingDirectory>
+  </PropertyGroup>
+
+  <!-- ===== SOURCE LINK (for debugging) ===== -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- ===== ANALYZERS ===== -->
+  <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- ===== PACKAGE REFERENCES (Global) ===== -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\CHANGELOG.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- ===== TOOLING PACKAGES (GitVersion + SourceLink) ===== -->
+  <ItemGroup>
+    <PackageReference Include="GitVersion.MsBuild" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- ===== PERFORMANCE OPTIMIZATIONS ===== -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+</Project>

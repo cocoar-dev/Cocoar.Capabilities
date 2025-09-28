@@ -1,0 +1,25 @@
+<Project>
+  <!-- ===== ENABLE CENTRAL PACKAGE MANAGEMENT ===== -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <!-- ===== BUILD & TOOLING PACKAGES ===== -->
+  <ItemGroup>
+    <PackageVersion Include="GitVersion.MsBuild" Version="6.0.4" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.4" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+  </ItemGroup>
+    <PackageVersion Include="GitVersion.MsBuild" Version="6.0.4" />
+  <ItemGroup>
+    <PackageVersion Include="xunit" Version="2.9.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+  <!-- ===== ANALYSIS PACKAGES ===== -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0" />
+  </ItemGroup>
+</Project>

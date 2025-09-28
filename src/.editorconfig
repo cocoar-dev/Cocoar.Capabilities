@@ -1,0 +1,31 @@
+# EditorConfig helps control analyzer severities per folder.
+# This file applies to projects under src/ only.
+
+# Do not mark this as root to allow a repo-level .editorconfig to override if added later
+
+# Default C# settings (keep analyzers active by default)
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# ---- Tests: relax rules that conflict with common test naming/mocking patterns ----
+[Cocoar.Capabilities.Tests/**.cs]
+# Allow underscores in test method names
+# Allow underscores in test method names
+dotnet_diagnostic.CA1707.severity = none
+# Allow type names ending with 'Collection' in test doubles
+dotnet_diagnostic.CA1711.severity = none
+# Globalization warnings not relevant for tests
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1311.severity = none
+# Performance/style suggestions that are noisy in tests
+dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1836.severity = none
+dotnet_diagnostic.CA1859.severity = none
+
+# ---- Benchmarks: relax rules to keep names readable and avoid noise ----
+[Cocoar.Capabilities.Benchmarks/**.cs]
+# Allow underscores in benchmark names
+dotnet_diagnostic.CA1707.severity = none
+# Ignore "can be static" for simple property stubs used in benchmarks
+dotnet_diagnostic.CA1822.severity = none

@@ -1,0 +1,28 @@
+mode: ContinuousDeployment
+
+branches:
+  main:
+    regex: ^main$
+    label: ''               # v6 uses 'label' instead of 'tag'
+    is-main-branch: true    # ← use this in v6 (or delete)
+  develop:
+    regex: ^develop$
+    label: alpha
+  release:
+    regex: ^release[/-]
+    label: rc
+  feature:
+    regex: ^(feature|bugfix)[/-]
+    label: useBranchName
+  hotfix:
+    regex: ^hotfix[/-]
+    label: hotfix
+  pull-request:
+    label: pr
+  other:
+    regex: .*
+    label: alpha
+
+tag-prefix: 'v'
+ignore:
+  sha: []

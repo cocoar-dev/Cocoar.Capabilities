@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <AssemblyName>Cocoar.Capabilities</AssemblyName>
+    <RootNamespace>Cocoar.Capabilities</RootNamespace>
+  </PropertyGroup>
+
+  <!-- ===== BUILD TOOLS ===== -->
+  <!-- Tooling and SourceLink are provided centrally via src/Directory.Build.props -->
+
+</Project>
