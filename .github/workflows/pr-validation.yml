@@ -22,22 +22,26 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Log version from GitVersion.MsBuild
-        run: |
-          dotnet restore ./Cocoar.Capabilities.slnx
-          dotnet build -c Release ./Cocoar.Capabilities.slnx > /dev/null
-          VERSION=$(grep -oP '<GitVersion_SemVer>\K[^<]+' ./Cocoar.Capabilities/obj/Release/*/GitVersion.MsBuild.props | head -n1 || true)
-          echo "Calculated SemVer: ${VERSION:-unknown}"
-        working-directory: ./src
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Calculate version
+        uses: gittools/actions/gitversion/execute@v3
+        id: gitversion
+
+      - name: Log calculated version
+        run: echo "GitVersion calculated version ${{ steps.gitversion.outputs.SemVer }}"
 
       - name: Restore dependencies
-        run: dotnet restore ./Cocoar.Capabilities.slnx
+        run: dotnet restore
         working-directory: ./src
 
       - name: Build solution
-        run: dotnet build ./Cocoar.Capabilities.slnx -c Release --no-restore
+        run: dotnet build -c Release --no-restore
         working-directory: ./src
 
       - name: Run tests
-        run: dotnet test ./Cocoar.Capabilities.slnx -c Release --no-build --no-restore --verbosity normal
+        run: dotnet test -c Release --no-build --no-restore --verbosity normal
         working-directory: ./src
