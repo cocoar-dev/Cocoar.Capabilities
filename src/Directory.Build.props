@@ -35,14 +35,7 @@
     <Description>High-performance, zero-allocation capability composition library for .NET. Implements the Capability Composition pattern for building extensible, type-safe systems using Extension Object and Role Object architectural patterns.</Description>
   </PropertyGroup>
 
-  <!-- ===== VERSIONING (GitVersion) ===== -->
-  <PropertyGroup>
-    <EnableGitVersionTask Condition="'$(EnableGitVersionTask)' == ''">false</EnableGitVersionTask>
-    <UpdateAssemblyInfo Condition="'$(UpdateAssemblyInfo)' == ''">false</UpdateAssemblyInfo>
-    <WriteVersionInfoToBuildLog>true</WriteVersionInfoToBuildLog>
-    <!-- Ensure GitVersion runs at the repo root (one level up from src/) -->
-    <GitVersionWorkingDirectory>$(MSBuildThisFileDirectory)../</GitVersionWorkingDirectory>
-  </PropertyGroup>
+
 
   <!-- ===== SOURCE LINK (for debugging) ===== -->
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
@@ -65,9 +58,8 @@
     <None Include="$(MSBuildThisFileDirectory)..\CHANGELOG.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <!-- ===== TOOLING PACKAGES (GitVersion + SourceLink) ===== -->
+  <!-- ===== TOOLING PACKAGES (SourceLink) ===== -->
   <ItemGroup>
-    <PackageReference Include="GitVersion.MsBuild" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
