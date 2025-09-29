@@ -28,7 +28,7 @@ jobs:
           versionSpec: '6.x'
 
       - name: Calculate version
-        id: gitversion
+        id: gv
         uses: gittools/actions/gitversion/execute@v3
 
       - name: Restore dependencies
