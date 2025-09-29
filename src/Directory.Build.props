@@ -37,8 +37,8 @@
 
   <!-- ===== VERSIONING (GitVersion) ===== -->
   <PropertyGroup>
-    <EnableGitVersionTask>true</EnableGitVersionTask>
-    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
+    <EnableGitVersionTask Condition="'$(EnableGitVersionTask)' == ''">false</EnableGitVersionTask>
+    <UpdateAssemblyInfo Condition="'$(UpdateAssemblyInfo)' == ''">false</UpdateAssemblyInfo>
     <WriteVersionInfoToBuildLog>true</WriteVersionInfoToBuildLog>
     <!-- Ensure GitVersion runs at the repo root (one level up from src/) -->
     <GitVersionWorkingDirectory>$(MSBuildThisFileDirectory)../</GitVersionWorkingDirectory>
