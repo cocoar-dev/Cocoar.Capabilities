@@ -17,28 +17,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Debug git state
-        run: |
-          git rev-parse --is-shallow-repository
-          git tag --list --sort=-creatordate | head -n 10
-          git describe --tags --always --long || true
-          
-      - name: GitVersion
-        uses: GitTools/actions/gitversion/execute@v3
-        with:
-          useConfigFile: true
-          additionalArguments: '/diag'
-        id: gv
-      
-      - name: Log calculated version
-        run: echo "GitVersion calculated version ${{ steps.gv.outputs.SemVer }}"
-
-      - name: Setup .NET (8 + 9)
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            8.0.x
-            9.0.x
+          dotnet-version: 9.0.x
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Calculate version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
 
       - name: Restore dependencies
         run: dotnet restore
