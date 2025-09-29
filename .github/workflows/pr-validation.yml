@@ -21,11 +21,14 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: GitVersion
-        uses: GitTools/actions/gitversion/execute@v3
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
         with:
-          useConfigFile: true
+          versionSpec: '6.x'
+
+      - name: Calculate version
         id: gv
+        uses: gittools/actions/gitversion/execute@v3
 
       - name: Log calculated version
         run: echo "GitVersion calculated version ${{ steps.gv.outputs.SemVer }}"
