@@ -9,7 +9,7 @@ This document explains the complete behavior of capability registration and quer
 
 ## Overview
 
-The system now uses an **ID-based architecture** with **contract-only registration semantics**. This means:
+The system now uses an **ID-based architecture** with **contract-only registration semantics**. Each `CapabilityScope` owns its own registry; there is no injectable or shared global registry surface. This means:
 
 - Each capability gets a unique ID when registered
 - Capabilities are only queryable by the exact types they were registered under
@@ -22,8 +22,11 @@ The system now uses an **ID-based architecture** with **contract-only registrati
 Registers a capability under its **concrete type only**.
 
 ```csharp
+using var scope = new CapabilityScope();
 var logCapability = new LogCapability<UserService>(LogLevel.Info);
-builder.Add(logCapability);
+var composition = scope.For(userService)
+    .Add(logCapability)
+    .Build();
 ```
 
 **Registration Result:**
@@ -35,8 +38,11 @@ builder.Add(logCapability);
 Registers a capability under the **specified contract type only**.
 
 ```csharp
+using var scope = new CapabilityScope();
 var logCapability = new LogCapability<UserService>(LogLevel.Info);
-builder.AddAs<ILogCapability<UserService>>(logCapability);
+var composition = scope.For(userService)
+    .AddAs<ILogCapability<UserService>>(logCapability)
+    .Build();
 ```
 
 **Registration Result:**
@@ -48,6 +54,7 @@ builder.AddAs<ILogCapability<UserService>>(logCapability);
 Registers a capability under **multiple contract types simultaneously**.
 
 ```csharp
+using var scope = new CapabilityScope();
 var logCapability = new LogCapability<UserService>(LogLevel.Info);
 builder.AddAs<(ILogCapability<UserService>, LogCapability<UserService>)>(logCapability);
 ```
@@ -59,6 +66,8 @@ builder.AddAs<(ILogCapability<UserService>, LogCapability<UserService>)>(logCapa
 ## Querying Behavior
 
 All querying methods (`TryGet`, `GetRequired`, `GetAll`, `Contains`) use **exact type matching** and only return capabilities that were explicitly registered under the queried type.
+
+Cross-component retrieval is performed through the same scope instance that created the composition (or a reference you keep to the composition itself). You can keep a scope as a long-lived container if you need shared discovery.
 
 ### Example: Interface Implementation vs Registration
 
@@ -192,4 +201,4 @@ The new system provides:
 - ✅ **Powerful removal**: RemoveWhere works with pattern matching across all registration types
 - ✅ **Performance**: ID-based internal architecture is faster and simpler
 
-The key principle: **You get exactly what you register for, nothing more, nothing less.**
+The key principle: **You get exactly what you register for, nothing more, nothing less.** Per-scope registries ensure isolation and predictable lifecycle management.

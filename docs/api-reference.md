@@ -4,12 +4,9 @@ Complete reference for all public APIs in Cocoar.Capabilities.
 
 ## Package Architecture
 
-Cocoar.Capabilities is available in two packages:
+Distributed as a single package: **`Cocoar.Capabilities`**.
 
-- **`Cocoar.Capabilities.Core`** - Core functionality only (maximum performance)
-- **`Cocoar.Capabilities`** - Includes Core + Registry functionality (convenience features)
-
-**Registry-specific APIs** (marked with 📋) are only available in the full `Cocoar.Capabilities` package. All other APIs are available in both packages.
+Scope-level options (`CapabilityScopeOptions`) enable or disable composer and composition registry tracking. No separate *Core* vs *Registry* packages exist anymore. Historical references to dual packaging and static helpers (like `BuildAndRegister()` / `Composition.FindOrDefault`) should be migrated to the `CapabilityScope` model.
 
 ## Core Interfaces
 
@@ -37,7 +34,15 @@ public record CachingCapability<T>(TimeSpan Duration) : ICapability<T>;
 
 ### IPrimaryCapability&lt;in T&gt;
 
-Marker interface for primary capabilities. Only one primary capability can be registered per subject.
+Marker interface for primary capabilities. Exactly one primary capability may exist per subject at any time.
+Adding rules:
+
+- First registration may use Add, AddAs, tuple AddAs, or WithPrimary
+- Replacement MUST use WithPrimary(newPrimary)
+- Add / AddAs / tuple AddAs will THROW if a primary already exists
+- WithPrimary(null) removes the current primary
+- Tuples may not contain more than one IPrimaryCapability<> contract
+ - TryAdd / TryAddAs of another primary silently no-op (they never replace)
 
 ```csharp
 public interface IPrimaryCapability<in T> : ICapability<T> { }
@@ -47,34 +52,40 @@ public interface IPrimaryCapability<in T> : ICapability<T> { }
 ```csharp
 public record DatabasePrimaryCapability<T> : IPrimaryCapability<T>;
 
-// Only one primary capability allowed per subject
-```
+// First time
+composer.Add(new DatabasePrimaryCapability<UserService>());
 
-## Registry Extensions 📋
-
-### BuildAndRegister&lt;TSubject&gt;
-
-**Package**: `Cocoar.Capabilities` (Registry package only)
-
-Builds the composition and automatically registers it globally for discovery.
-
-```csharp
-public static IComposition<TSubject> BuildAndRegister<TSubject>(this Composer<TSubject> composer) 
-    where TSubject : notnull
-```
-
-**Usage**:
-```csharp
-// Build and register in one step
-var composition = Composer.For(userService)
-    .Add(new LoggingCapability<UserService>())
-    .BuildAndRegister(); // Available globally via Composition.FindOrDefault
-
-// Equivalent to:
-var composition = composer.Build();
-CompositionRegistryCore.Register(composition);
-```
+// Replacing (must use WithPrimary)
 composer.WithPrimary(new DatabasePrimaryCapability<UserService>());
+
+// Removing
+composer.WithPrimary(null);
+```
+
+## Registry Participation
+
+Registration is controlled per scope and optionally per build call:
+
+```csharp
+using var scope = new CapabilityScope(new CapabilityScopeOptions
+{
+    UseCompositionRegistry = true // default
+});
+
+var composition = scope.For(user)
+    .Add(new LoggingCapability<User>(LogLevel.Info))
+    .Build(); // automatically registered because UseCompositionRegistry=true
+
+// Explicit override (force register even if disabled in options)
+var forced = scope.For(user)
+    .Add(new CachingCapability<User>(TimeSpan.FromMinutes(5)))
+    .Build(useRegistry: true);
+
+// Lookup
+var found = scope.Compositions.FindOrDefault(user);
+```
+
+To migrate from legacy `BuildAndRegister()` + static global lookup, see `static-api-migration-strategy.md`.
 ```
 
 ### IOrderedCapability
@@ -139,29 +150,47 @@ public interface IComposition<TSubject> : IComposition
 
 ## Builder API
 
-### Composer Static Class
+### CapabilityScope
 
-Entry point for creating capability composers.
+Entry point for creating capability scopes and managing compositions.
 
 ```csharp
-public static class Composer
+public sealed class CapabilityScope : IDisposable
 {
+    // Constructor
+    public CapabilityScope(CapabilityScopeOptions? options = null);
+    
     // Create composer for subject
-    public static Composer<TSubject> For<TSubject>(TSubject subject) where TSubject : notnull;
+    public Composer<TSubject> For<TSubject>(TSubject subject, bool? useRegistry = null) where TSubject : notnull;
     
-    // 📋 Find existing composer (Registry package only)
-    public static bool TryFind<TSubject>(TSubject subject, out Composer<TSubject> composer) where TSubject : notnull;
-    public static Composer<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
-    public static Composer<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
+    // Recomposition from existing composition
+    public Composer<TSubject> Recompose<TSubject>(IComposition<TSubject> composition, bool? useRegistry = null) where TSubject : notnull;
     
-    // Recomposition
-    public static Composer<TSubject> Recompose<TSubject>(IComposition<TSubject> existingComposition) where TSubject : notnull;
+    // Registry access
+    public ComposerRegistryApi Composers { get; }
+    public CompositionRegistryApi Compositions { get; }
+    
+    // Disposal
+    public void Dispose();
+}
+```
+
+### CapabilityScopeOptions
+
+Configuration options for capability scopes.
+
+```csharp
+public record CapabilityScopeOptions
+{
+    public bool UseComposerRegistry { get; init; } = true;
+    public bool UseCompositionRegistry { get; init; } = true;
+    public IReadOnlyList<ISubjectKeyMapper> SubjectKeyMappers { get; init; } = Array.Empty<ISubjectKeyMapper>();
 }
 ```
 
 ### Composer&lt;TSubject&gt;
 
-Fluent builder for capability registration.
+Fluent builder for capability registration (created via `CapabilityScope.For()`).
 
 ```csharp
 public sealed class Composer<TSubject> where TSubject : notnull
@@ -172,7 +201,10 @@ public sealed class Composer<TSubject> where TSubject : notnull
     public Composer<TSubject> Add(ICapability<TSubject> capability);
     
     // Contract registration
-    public Composer<TSubject> AddAs<TContract>(ICapability<TSubject> capability);
+    public Composer<TSubject> AddAs<TContract>(ICapability<TSubject> capability) where TContract : class, ICapability<TSubject>;
+    
+    // Tuple contract registration
+    public Composer<TSubject> AddAs<TContracts>(ICapability<TSubject> capability) where TContracts : ITuple;
     
     // Conditional registration
     public Composer<TSubject> TryAdd<TCapability>(TCapability capability) where TCapability : class, ICapability<TSubject>;
@@ -189,62 +221,54 @@ public sealed class Composer<TSubject> where TSubject : notnull
     public bool Has<TCapability>() where TCapability : class, ICapability<TSubject>;
     
     // Build immutable composition
-    public IComposition<TSubject> Build();
+    public IComposition<TSubject> Build(bool? useRegistry = null);
 }
 ```
 
-## 📋 Global Composition API (Registry Package Only)
+## Registry APIs
 
-### Composition Static Class
+### ComposerRegistryApi
 
-Global registry for finding compositions by subject.
+Scope-level registry for composer lookup and management.
 
 ```csharp
-public static class Composition
+public class ComposerRegistryApi : IDisposable
+{
+    // Find existing composer by subject
+    public bool TryFind<TSubject>(TSubject subject, out Composer<TSubject> composer) where TSubject : notnull;
+    public Composer<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
+    public Composer<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
+    
+    // Remove composer
+    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull;
+    public bool Remove(object subject);
+    
+    public void Dispose();
+}
+```
+
+### CompositionRegistryApi
+
+Scope-level registry for composition lookup and management.
+
+```csharp
+public class CompositionRegistryApi : IDisposable
 {
     // Generic subject lookup
-    public static bool TryFind<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull;
-    public static IComposition<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
-    public static IComposition<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
+    public bool TryFind<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull;
+    public IComposition<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
+    public IComposition<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
     
     // Non-generic subject lookup
-    public static bool TryFind(object subject, out IComposition composition);
-    public static IComposition? FindOrDefault(object subject);
-    public static IComposition FindRequired(object subject);
+    public bool TryFind(object subject, out IComposition composition);
+    public IComposition? FindOrDefault(object subject);
+    public IComposition FindRequired(object subject);
     
     // Composition removal
-    public static bool Remove<TSubject>(TSubject subject) where TSubject : notnull;
-    public static bool Remove(object subject);
-}
-```
-
-## 📋 Configuration APIs (Registry Package Only)
-
-### CompositionRegistryConfiguration
-
-Configuration for the composition registry system.
-
-```csharp
-public static class CompositionRegistryConfiguration
-{
-    public static ICompositionRegistryProvider Provider { get; set; }
-    public static void ClearValueTypes();
-    public static int ValueTypeCount { get; }
-}
-```
-
-## 📋 Extension Interfaces (Registry Package Only)
-
-### ICompositionRegistryProvider
-
-Interface for custom composition registry implementations.
-
-```csharp
-public interface ICompositionRegistryProvider
-{
-    void Register(object subject, IComposition composition);
-    bool TryGet(object subject, out IComposition composition);
-    bool Remove(object subject);
+    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull;
+    public bool Remove(object subject);
+    
+    public void Dispose();
 }
 ```
 
@@ -261,13 +285,28 @@ public static class ReadOnlyListExtensions
 }
 ```
 
+## Configuration
+
+### ISubjectKeyMapper
+
+Interface for custom subject key mapping strategies.
+
+```csharp
+public interface ISubjectKeyMapper
+{
+    bool CanMap(Type subjectType);
+    string MapToKey(object subject);
+}
+```
+
 ## Usage Patterns
 
 ### Basic Registration and Query
 
 ```csharp
-// Create composition
-var composition = Composer.For(subject)
+// Create scope and composition
+using var scope = new CapabilityScope();
+var composition = scope.For(subject)
     .Add(new FirstCapability<Subject>())
     .Add(new SecondCapability<Subject>())
     .Build();
@@ -284,9 +323,13 @@ if (composition.Has<SecondCapability<Subject>>())
 
 ```csharp
 // Register under interface contract
-composer.AddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
+using var scope = new CapabilityScope();
+var composer = scope.For(subject)
+    .AddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
 
 // Register under multiple contracts (tuple syntax)
+composer.AddAs<(IValidationCapability<Subject>, EmailValidator<Subject>)>(validator);
+```
 composer.AddAs<(IValidationCapability<Subject>, EmailValidator<Subject>)>(validator);
 ```
 
@@ -294,7 +337,10 @@ composer.AddAs<(IValidationCapability<Subject>, EmailValidator<Subject>)>(valida
 
 ```csharp
 // Set primary capability
-composer.WithPrimary(new DatabasePrimaryCapability<Subject>());
+using var scope = new CapabilityScope();
+var composition = scope.For(subject)
+    .WithPrimary(new DatabasePrimaryCapability<Subject>())
+    .Build();
 
 // Query primary capability
 if (composition.TryGetPrimary(out var primary))
@@ -309,28 +355,47 @@ var typedPrimary = composition.GetPrimaryOrDefaultAs<DatabasePrimaryCapability<S
 
 ```csharp
 // Only register if not already present
-composer.TryAdd(new LoggingCapability<Subject>(LogLevel.Info));
-composer.TryAddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
+using var scope = new CapabilityScope();
+var composer = scope.For(subject)
+    .TryAdd(new LoggingCapability<Subject>(LogLevel.Info))
+    .TryAddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
 ```
 
 ### Capability Removal
 
 ```csharp
 // Remove capabilities by predicate
-composer.RemoveWhere(cap => cap is ILogCapability<Subject> log && log.Level == LogLevel.Debug);
+using var scope = new CapabilityScope();
+var composition = scope.For(subject)
+    .Add(new LoggingCapability<Subject>(LogLevel.Debug, "Debug"))
+    .Add(new LoggingCapability<Subject>(LogLevel.Info, "Info"))
+    .RemoveWhere(cap => cap is LoggingCapability<Subject> log && log.Level == LogLevel.Debug)
+    .Build();
 ```
 
-### Global Registry Usage
+### Scope Registry Usage
 
 ```csharp
+// Create scope with configuration
+using var scope = new CapabilityScope(new CapabilityScopeOptions
+{
+    UseCompositionRegistry = true,
+    UseComposerRegistry = true
+});
+
+// Build and register
+var composition = scope.For(subject)
+    .Add(new LoggingCapability<Subject>(LogLevel.Info, "Test"))
+    .Build(); // Automatically registered due to UseCompositionRegistry=true
+
 // Find composition by subject
-var composition = Composition.FindOrDefault(subject);
+var foundComposition = scope.Compositions.FindOrDefault(subject);
 
 // Remove composition
-Composition.Remove(subject);
+scope.Compositions.Remove(subject);
 
-// Check value type composition count
-var count = CompositionRegistryConfiguration.ValueTypeCount;
+// Find composer (if still building)
+var foundComposer = scope.Composers.FindOrDefault(subject);
 ```
 
 ## Error Handling

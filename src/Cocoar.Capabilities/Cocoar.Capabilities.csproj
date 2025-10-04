@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Upgraded to .NET 8 LTS -->
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>true</IsPackable>
     <AssemblyName>Cocoar.Capabilities</AssemblyName>
     <RootNamespace>Cocoar.Capabilities</RootNamespace>
+    <!-- Remove redundant LangVersion/Nullable/TreatWarningsAsErrors (centrally managed) -->
+    <!-- Temporarily keep certain nullability warnings demoted; consider fixing & removing -->
+    <WarningsNotAsErrors>8600;8602;CA1510</WarningsNotAsErrors>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Cocoar.Capabilities.Core\Cocoar.Capabilities.Core.csproj" />
-  </ItemGroup>
 
   <!-- ===== BUILD TOOLS ===== -->
   <!-- Tooling and SourceLink are provided centrally via src/Directory.Build.props -->

@@ -1,15 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using System;
-using System.Linq;
-using Cocoar.Capabilities.Core;
-using Cocoar.Capabilities;
+
 
 namespace Cocoar.Capabilities.Benchmarks;
 
-/// <summary>
-/// Comprehensive capability system performance benchmarks.
-/// Tests realistic scaling scenarios across different subject counts and capability densities.
-/// </summary>
 [MemoryDiagnoser]
 [SimpleJob]
 public class CapabilityBenchmarks
@@ -48,7 +41,7 @@ public class CapabilityBenchmarks
         {
             // Single subject scenario
             var subject = new TestSubject(0, "Subject_0");
-            var composer = Composer.For(subject);
+            var composer = BenchmarkScopes.Shared.For(subject);
             
             for (int c = 0; c < capabilitiesPerSubject; c++)
             {
@@ -63,7 +56,7 @@ public class CapabilityBenchmarks
             // Multiple subjects - build separately and combine manually for testing
             // Note: This is a simplified approach for benchmarking purposes
             var firstSubject = new TestSubject(0, "Subject_0");
-            var composer = Composer.For(firstSubject);
+            var composer = BenchmarkScopes.Shared.For(firstSubject);
             
             // Add capabilities for just the first subject to get basic composition
             for (int c = 0; c < capabilitiesPerSubject; c++)
@@ -78,7 +71,7 @@ public class CapabilityBenchmarks
     
     private static IComposition<TestSubject> CreateAndRegisterComposition(TestSubject subject, int capabilitiesCount)
     {
-        var composer = Composer.For(subject);
+        var composer = BenchmarkScopes.Shared.For(subject);
         
         for (int c = 0; c < capabilitiesCount; c++)
         {
@@ -86,7 +79,7 @@ public class CapabilityBenchmarks
             composer.Add(capability);
         }
         
-        return composer.BuildAndRegister();
+        return composer.Build(useRegistry: true);
     }
     
     private static ICapability<TestSubject> CreateCapability(int subjectId, int capabilityId)
@@ -147,7 +140,7 @@ public class CapabilityBenchmarks
     {
         // Use same pattern as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");
-        var composer = Composer.For(subject);
+        var composer = BenchmarkScopes.Shared.For(subject);
         
         for (int c = 0; c < 50; c++)
         {
@@ -155,10 +148,10 @@ public class CapabilityBenchmarks
             composer.Add(capability);
         }
         
-        composer.BuildAndRegister();
+        composer.Build(useRegistry: true);
         
         // Retrieve from registry (this is the real-world usage pattern)
-        Composition.TryFind(subject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(subject, out var composition);
         return composition!;
     }
     
@@ -167,7 +160,7 @@ public class CapabilityBenchmarks
     {
         // Use SAME subject ID as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");
-        var composer = Composer.For(subject);
+        var composer = BenchmarkScopes.Shared.For(subject);
         
         for (int c = 0; c < 500; c++)
         {
@@ -175,10 +168,10 @@ public class CapabilityBenchmarks
             composer.Add(capability);
         }
         
-        composer.BuildAndRegister();
+        composer.Build(useRegistry: true);
         
         // Retrieve from registry (this is the real-world usage pattern)
-        Composition.TryFind(subject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(subject, out var composition);
         return composition!;
     }
     
@@ -186,28 +179,28 @@ public class CapabilityBenchmarks
     [Benchmark]
     public int Count_Registry_Small_AllCapabilities()
     {
-        Composition.TryFind(_registryTestSubject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubject, out var composition);
         return composition!.GetAll().Count;
     }
 
     [Benchmark]
     public int Count_Registry_Large_AllCapabilities()
     {
-        Composition.TryFind(_registryTestSubjectLarge, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubjectLarge, out var composition);
         return composition!.GetAll().Count;
     }
     
     [Benchmark]
     public int Count_Registry_Small_FeatureCapabilities()
     {
-        Composition.TryFind(_registryTestSubject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubject, out var composition);
         return composition!.GetAll<FeatureCapability>().Count;
     }
     
     [Benchmark]
     public int Count_Registry_Large_FeatureCapabilities()
     {
-        Composition.TryFind(_registryTestSubjectLarge, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubjectLarge, out var composition);
         return composition!.GetAll<FeatureCapability>().Count;
     }
 }

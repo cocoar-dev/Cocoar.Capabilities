@@ -4,7 +4,7 @@ Performance best practices and optimization strategies for choosing between Coco
 
 ## Architecture-Specific Performance
 
-### Core-Only Architecture (`Cocoar.Capabilities.Core`) 
+### Registry Disabled Configuration
 **Maximum performance** - you manage composition lifetimes:
 
 - **Build Performance**: ~4.6 μs (50 capabilities), ~42 μs (500 capabilities)

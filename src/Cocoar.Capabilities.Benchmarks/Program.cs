@@ -2,15 +2,16 @@ using BenchmarkDotNet.Running;
 
 namespace Cocoar.Capabilities.Benchmarks;
 
-/// <summary>
-/// Entry point for running performance benchmarks.
-/// Usage: dotnet run --configuration Release
-/// </summary>
 public class Program
 {
     public static void Main(string[] args)
     {
-        var switcher = BenchmarkSwitcher.FromTypes([typeof(CapabilityBenchmarks)]);
+        var switcher = BenchmarkSwitcher.FromTypes([
+            typeof(CapabilityBenchmarks),
+            typeof(CoreVsRegistryBenchmarks),
+            typeof(RecompositionBenchmarks),
+            typeof(CanonicalizationBenchmarks)
+        ]);
 
         if (args.Length == 0)
         {

@@ -4,21 +4,13 @@ Get up and running with Cocoar.Capabilities in minutes.
 
 ## Installation
 
-Choose your architecture and add the appropriate NuGet package:
+Add the single NuGet package:
 
-### Registry Architecture (Global Discovery)
 ```bash
 dotnet add package Cocoar.Capabilities
 ```
-**Best for**: Convenience, global composition access, simple scenarios
 
-### Core-Only Architecture (Maximum Performance)  
-```bash
-dotnet add package Cocoar.Capabilities.Core
-```
-**Best for**: High-performance scenarios, existing object lifecycle management
-
-> Both packages share the same API for capability definition and querying. The difference is in composition lifecycle management.
+This provides the complete capability composition system. Registry behavior (global lookup) and composer tracking are configured per `CapabilityScope` via `CapabilityScopeOptions`.
 
 ## Core Concepts
 
@@ -26,18 +18,19 @@ dotnet add package Cocoar.Capabilities.Core
 - Add capabilities to objects without inheritance
 - Query what capabilities an object has
 - Organize capabilities through contracts and ordering
+- Enable cross-project extensibility without circular dependencies
 
 ## Your First Capability
 
-### 1. Define a Capability
+### 1. Define Capabilities
 
 ```csharp
 using Cocoar.Capabilities;
 
 // Simple capability with data
-public record LoggingCapability<T>(LogLevel Level) : ICapability<T>;
+public record LoggingCapability<T>(LogLevel Level, string Category) : ICapability<T>;
 
-// Interface-based capability contract
+// Interface-based capability for contracts
 public interface IValidationCapability<T> : ICapability<T>
 {
     bool IsValid(T subject);
@@ -45,20 +38,21 @@ public interface IValidationCapability<T> : ICapability<T>
 
 public record EmailValidator<T> : IValidationCapability<T>
 {
-    public bool IsValid(T subject) => /* validation logic */;
+    public bool IsValid(T subject) => /* validation logic */ true;
 }
 ```
 
-### 2. Attach Capabilities to Objects
+### 2. Create a Capability Scope and Attach Capabilities
 
 ```csharp
+using var scope = new CapabilityScope();
 var userService = new UserService();
 
 // Build a composition with capabilities
-var composition = Composer.For(userService)
-    .Add(new LoggingCapability<UserService>(LogLevel.Info))
+var composition = scope.For(userService)
+    .Add(new LoggingCapability<UserService>(LogLevel.Info, "UserManagement"))
     .Add(new EmailValidator<UserService>())
-    .Build();
+    .Build(); // Automatically registered in scope if UseCompositionRegistry=true (default)
 ```
 
 ### 3. Query Capabilities
@@ -82,17 +76,17 @@ var loggingCaps = composition.GetAll<LoggingCapability<UserService>>();
 var logLevel = loggingCaps.FirstOrDefault()?.Level ?? LogLevel.None;
 ```
 
-### 4. Find Compositions Globally
+### 4. Find Compositions via Scope
 
 ```csharp
-// Compositions are automatically registered globally
-var foundComposition = Composition.FindRequired(userService);
-
-// Works from anywhere in your application
-if (Composition.TryFind(userService, out var comp))
+// Find composition later via the scope
+if (scope.Compositions.TryFind(userService, out var foundComposition))
 {
-    var hasLogging = comp.Has<LoggingCapability<UserService>>();
+    var hasLogging = foundComposition.Has<LoggingCapability<UserService>>();
 }
+
+// Alternative: store the composition reference directly
+var storedComposition = composition; // Immutable, thread-safe
 ```
 
 ## Common Patterns
@@ -102,7 +96,8 @@ if (Composition.TryFind(userService, out var comp))
 Register capabilities under interface contracts for polymorphic querying:
 
 ```csharp
-var composition = Composer.For(service)
+using var scope = new CapabilityScope();
+var composition = scope.For(service)
     .AddAs<IValidationCapability<Service>>(new EmailValidator<Service>())
     .AddAs<IValidationCapability<Service>>(new PhoneValidator<Service>())
     .Build();
@@ -119,9 +114,10 @@ Use primary capabilities to define the main behavior or type of a subject:
 public record DatabasePrimaryCapability<T> : IPrimaryCapability<T>;
 public record CachePrimaryCapability<T> : IPrimaryCapability<T>;
 
-var composition = Composer.For(service)
+using var scope = new CapabilityScope();
+var composition = scope.For(service)
     .WithPrimary(new DatabasePrimaryCapability<Service>())
-    .Add(new LoggingCapability<Service>(LogLevel.Debug))
+    .Add(new LoggingCapability<Service>(LogLevel.Debug, "Database"))
     .Build();
 
 // Only one primary capability allowed per subject
@@ -142,7 +138,8 @@ public record MiddlewareCapability<T>(string Name, int Priority)
     public int Order => Priority;
 }
 
-var composition = Composer.For(pipeline)
+using var scope = new CapabilityScope();
+var composition = scope.For(pipeline)
     .Add(new MiddlewareCapability<Pipeline>("Auth", 100))
     .Add(new MiddlewareCapability<Pipeline>("Logging", 200))
     .Add(new MiddlewareCapability<Pipeline>("Validation", 150))

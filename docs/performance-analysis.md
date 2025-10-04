@@ -6,7 +6,7 @@ Cocoar.Capabilities offers **two architectures** with distinct performance chara
 
 ## Architecture Comparison
 
-### Core-Only Architecture (`Cocoar.Capabilities.Core`)
+### Registry Disabled (legacy docs term: Core-Only)
 **Maximum performance** - you manage composition lifetimes directly:
 - **Build**: ~4.6 μs (50 capabilities), ~42 μs (500 capabilities)
 - **Query**: ~142 ns (feature queries), ~1 μs (all capabilities)  
@@ -55,6 +55,23 @@ Cocoar.Capabilities offers **two architectures** with distinct performance chara
 | All Query (Small) | 1.18 KB | +0 bytes | 100% |
 | All Query (Large) | 1.18 KB | +7.2 KB | 14% |
 
+### Optional Capability Ordering Overhead
+
+Capability ordering is conditional. If no capability implements `IOrderedCapability`, the ordering scan exits immediately (O(n) predicate scan with early break, typically branch-predictable) and no sort occurs.
+
+When ordered capabilities are present:
+1. A single pass records original indices to preserve stability when duplicate `Order` values exist.
+2. A one-time stable sort runs using the original index map as a secondary key.
+3. The resulting arrays are cached in the immutable composition; subsequent `GetAll()` / `GetAll<T>()` calls do not re-sort.
+
+Benchmark highlights (relative observations – see `OrderingBenchmarks` for reproducible runs):
+- Already sorted or small sets: sort cost often below noise threshold.
+- Reverse-ordered worst case: additional cost is proportional to `n log n` but still dominated by capability instantiation for moderate sizes (≤500).
+- Duplicate order groups: stability bookkeeping adds a small dictionary allocation already amortized by capability count.
+- Recompositions with no structural change: skip sort entirely (arrays reused) yielding near-zero overhead.
+
+Practical guidance: only pay for ordering when you declare it; you can freely mix ordered and unordered capability sets without global penalties.
+
 ## Understanding Registry Overhead
 
 ### Why Overhead Exists
@@ -100,10 +117,7 @@ This is **not** a library limitation - it's the fundamental cost of persistent c
 - **Minimal GC pressure** during normal operations
 
 ### Framework Compatibility
-- **.NET Standard 2.0** - maximum platform compatibility
-- **AOT-friendly** - no runtime code generation
-- **Zero dependencies** - no external library requirements
-- **Assembly sizes**: Core ~21KB, Registry total ~16KB
+Targets modern .NET (net8.0+) with AOT-friendly design (no runtime code generation) and zero external dependencies. Legacy multi-package (.Core vs registry) distribution has been consolidated into a single package. Assembly size remains small (~tens of KB) and stable across configurations.
 
 ## Benchmark Environment
 
@@ -114,30 +128,33 @@ This is **not** a library limitation - it's the fundamental cost of persistent c
 
 > Performance results are representative but will vary by hardware, runtime version, and workload characteristics. Use these numbers for relative comparison and architectural decision-making.
 
-## Migration Guidance
+## Migration Guidance (Legacy Static API → Scope API)
 
-### From Registry to Core-Only
+Previous examples used static helpers (`Composer.For`, `BuildAndRegister`, `Composition.FindOrDefault`). Transition to `CapabilityScope` is direct:
+
+### Legacy (Static)
 ```csharp
-// BEFORE (Registry)
-var composition = Composer.For(subject).Add(...).BuildAndRegister();
-// Later...
-var found = Composition.FindOrDefault(subject);
-
-// AFTER (Core-Only)  
-var composition = Composer.For(subject).Add(...).Build();
-// Store in your existing object lifecycle system
-_serviceRegistry.Register(subject, composition);
+using var legacyScope = new CapabilityScope(new CapabilityScopeOptions { UseCompositionRegistry = true });
+var composition = legacyScope.For(subject).Add(...).Build(); // registered (options enabled)
+var found = legacyScope.Compositions.FindOrDefault(subject);
 ```
 
-### From Core-Only to Registry
+### Current (Scope + Options)
 ```csharp
-// BEFORE (Core-Only)
-var composition = Composer.For(subject).Add(...).Build();
-_myStorage[subject] = composition;
-
-// AFTER (Registry)
-var composition = Composer.For(subject).Add(...).BuildAndRegister();
-// Automatic global registration
+using var scope = new CapabilityScope(new CapabilityScopeOptions { UseCompositionRegistry = true });
+var composition = scope.For(subject).Add(...).Build(); // auto-registered
+var found = scope.Compositions.FindOrDefault(subject);
 ```
 
-The choice is reversible - the capability definition and query APIs remain identical across both architectures.
+Disable registry for max performance:
+```csharp
+using var scope = new CapabilityScope(new CapabilityScopeOptions { UseCompositionRegistry = false });
+var localOnly = scope.For(subject).Add(...).Build(); // not tracked
+```
+
+Force a single build to register even if globally disabled:
+```csharp
+var mixed = scope.For(subject).Add(...).Build(useRegistry: true);
+```
+
+See `static-api-migration-strategy.md` for deeper rewrite patterns.

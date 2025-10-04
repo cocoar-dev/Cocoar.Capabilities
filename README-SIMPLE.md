@@ -41,11 +41,11 @@ public class UserService
 
 ### After (Capabilities Approach)
 ```csharp
-// Any object becomes a "subject" (dictionary key)
+using var scope = new CapabilityScope();
 var userService = new UserService();
 
-// Attach "capabilities" (dictionary values) to it
-var enhanced = Composer.For(userService)
+// Attach capabilities via the scope
+var enhanced = scope.For(userService)
     .Add(new LoggingCapability("Debug mode"))
     .Add(new CachingCapability(TimeSpan.FromMinutes(5)))
     .Add(new ValidationCapability(user => user.IsValid()))
@@ -87,7 +87,7 @@ composer.Add(new DIRegistrationCapability<DatabaseConfig>(ServiceLifetime.Single
 
 // Consumer: Gets both capabilities without circular dependencies
 var config = new DatabaseConfig();
-var enhanced = Composer.For(config)
+var enhanced = scope.For(config)
     .Add(validationFromProjectB)
     .Add(diInfoFromProjectC)
     .Build();
@@ -97,7 +97,7 @@ var enhanced = Composer.For(config)
 ```csharp
 // You can't modify HttpClient, but you can enhance it
 var httpClient = new HttpClient();
-var enhanced = Composer.For(httpClient)
+var enhanced = scope.For(httpClient)
     .Add(new RetryCapability(maxRetries: 3))
     .Add(new CircuitBreakerCapability(threshold: 5))
     .Add(new LoggingCapability("HTTP"))
@@ -113,10 +113,10 @@ var enhanced = Composer.For(httpClient)
 var myObject = new AnyClass();
 
 // 2. Attach capabilities (behaviors/data)
-var composition = Composer.For(myObject)
+var composition = scope.For(myObject)
     .Add(new SomeCapability())           // Add behavior
     .Add(new AnotherCapability())        // Add more behavior
-    .BuildAndRegister();                 // Build and make globally findable
+    .Build(useRegistry: true);           // Optionally register in scope registry
 
 // 3. Use the capabilities
 var behaviors = composition.GetAll<SomeCapability>();
@@ -125,26 +125,20 @@ if (composition.Has<AnotherCapability>()) {
 }
 
 // 4. Find it globally later (if using Registry package)
-var found = Composition.FindOrDefault(myObject);
+var found = scope.Compositions.FindOrDefault(myObject);
 ```
 
 ## Two Packages = Two Approaches
 
-### Core-Only (21 KB)
-```bash
-dotnet add package Cocoar.Capabilities.Core
-```
-- **Maximum performance**
-- **You manage** where to store the compositions
-- **Perfect for** high-performance scenarios
-
-### Registry (37 KB total)  
+### Install
 ```bash
 dotnet add package Cocoar.Capabilities
 ```
-- **Global discovery** - find compositions anywhere
-- **Convenience methods** like `BuildAndRegister()`
-- **Perfect for** easy cross-project scenarios
+
+Use `CapabilityScopeOptions` to enable/disable registry tracking per scope:
+```csharp
+var scope = new CapabilityScope(new CapabilityScopeOptions{ UseCompositionRegistry = true });
+```
 
 ## Is This Like...?
 
@@ -173,4 +167,4 @@ The journey from "What is this?" to "This is powerful!" is worth it. Trust the p
 
 ---
 
-*This explanation was written after struggling to understand capabilities for days. If it still doesn't click, that's normal - the concept is genuinely different from traditional OOP patterns.*
+*This explanation was written after struggling to understand capabilities for days. If it still doesn't click, that's normal - the concept is genuinely different from traditional OOP patterns. See `docs/static-api-migration-strategy.md` if you're reading older examples with `BuildAndRegister()`.*

@@ -1,14 +1,8 @@
 using BenchmarkDotNet.Attributes;
-using System;
-using System.Linq;
-using Cocoar.Capabilities.Core;
-using Cocoar.Capabilities;
+
 
 namespace Cocoar.Capabilities.Benchmarks;
 
-/// <summary>
-/// Performance comparison between Core-only operations (fast) and Registry-enabled operations (convenient).
-/// </summary>
 [MemoryDiagnoser]
 [SimpleJob]
 public class CoreVsRegistryBenchmarks
@@ -31,7 +25,7 @@ public class CoreVsRegistryBenchmarks
     public void Setup()
     {
         // Core composition - no registry overhead
-        _coreComposition = CreateCoreComposition(1, 50);
+    _coreComposition = CreateCoreComposition(1, 50);
         
         // Registry composition - with global registry
         _registrySubject = new TestSubject(999, "RegistryTest");
@@ -42,7 +36,7 @@ public class CoreVsRegistryBenchmarks
     public void Cleanup()
     {
         // Clean up registry to avoid memory leaks
-        Composition.Remove(_registrySubject);
+        BenchmarkScopes.Shared.Compositions.Remove(_registrySubject);
     }
 
 
@@ -62,7 +56,7 @@ public class CoreVsRegistryBenchmarks
         var composition = CreateRegistryComposition(subject, 50);
         
         // Clean up immediately to avoid accumulation
-        Composition.Remove(subject);
+        BenchmarkScopes.Shared.Compositions.Remove(subject);
         return composition;
     }
 
@@ -81,7 +75,7 @@ public class CoreVsRegistryBenchmarks
         var composition = CreateRegistryComposition(subject, 200);
         
         // Clean up immediately to avoid accumulation
-        Composition.Remove(subject);
+        BenchmarkScopes.Shared.Compositions.Remove(subject);
         return composition;
     }
 
@@ -130,7 +124,8 @@ public class CoreVsRegistryBenchmarks
     public IComposition<TestSubject>? Lookup_Registry_FindOrDefault()
     {
         // Registry pattern: Global lookup (convenience with overhead)
-        return Composition.FindOrDefault(_registrySubject);
+        BenchmarkScopes.Shared.Compositions.TryFind(_registrySubject, out var composition);
+        return composition;
     }
 
     [Benchmark(Description = "Registry: TryFind pattern")]
@@ -138,16 +133,16 @@ public class CoreVsRegistryBenchmarks
     public bool Lookup_Registry_TryFind()
     {
         // Registry pattern: TryFind (slightly optimized)
-        return Composition.TryFind(_registrySubject, out _);
+        return BenchmarkScopes.Shared.Compositions.TryFind(_registrySubject, out _);
     }
 
 
 
     private static IComposition<TestSubject> CreateCoreComposition(int subjects, int capabilitiesPerSubject)
     {
-        // Core-only: Build without registry registration (fastest)
         var subject = new TestSubject(0, "CoreSubject");
-        var composer = Composer.For(subject);
+        // Use lightweight scope (registries disabled)
+        var composer = BenchmarkScopes.SharedLightweight.For(subject);
         
         for (int c = 0; c < capabilitiesPerSubject; c++)
         {
@@ -155,13 +150,12 @@ public class CoreVsRegistryBenchmarks
             composer.Add(capability);
         }
         
-        return composer.Build();
+        return composer.Build(); // registries disabled => no registration
     }
 
     private static IComposition<TestSubject> CreateRegistryComposition(TestSubject subject, int capabilitiesPerSubject)
     {
-        // Registry-enabled: Build and register globally (convenient)
-        var composer = Composer.For(subject);
+        var composer = BenchmarkScopes.Shared.For(subject);
         
         for (int c = 0; c < capabilitiesPerSubject; c++)
         {
@@ -169,7 +163,7 @@ public class CoreVsRegistryBenchmarks
             composer.Add(capability);
         }
         
-        return composer.BuildAndRegister();
+        return composer.Build(useRegistry: true);
     }
     
     private static ICapability<TestSubject> CreateCapability(int subjectId, int capabilityId)

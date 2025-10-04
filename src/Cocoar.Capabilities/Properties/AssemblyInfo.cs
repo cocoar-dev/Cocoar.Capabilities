@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Cocoar.Capabilities.Tests")]
-[assembly: InternalsVisibleTo("Cocoar.Capabilities.Core.Tests")]
+// Removed obsolete Core test assembly friend reference after project consolidation.
+// [assembly: InternalsVisibleTo("Cocoar.Capabilities.Core.Tests")]

@@ -18,40 +18,37 @@ Think of it as a **strongly-typed property bag** where any library can attach be
 
 ```csharp
 // Any object can have capabilities attached
+using var scope = new CapabilityScope();
 var userService = new UserService();
-var composition = Composer.For(userService)
+var composition = scope.For(userService)
     .Add(new LoggingCapability<UserService>(LogLevel.Info))
     .Add(new CachingCapability<UserService>(TimeSpan.FromMinutes(5)))
-    .Build();
+    .Build(); // Immutable snapshot
 
-var cache = composition.GetAll<CachingCapability<UserService>>().FirstOrDefault();
 // Capabilities are discoverable and type-safe
+var cache = composition.GetAll<CachingCapability<UserService>>().FirstOrDefault();
 var loggers = composition.GetAll<LoggingCapability<UserService>>();
 ```
 
 ## 🌟 Key Benefits
 
 - **🔒 Type Safe**: Compile-time guarantees for capability-subject relationships
-- **⚡ High Performance**: ~140ns queries, ~4.6μs builds (Core), registry overhead available when needed
+- **⚡ High Performance**: ~25 ns registry lookups, ~51 ns feature queries, ~4.5 μs builds (50 caps)
 - **🧵 Thread Safe**: Immutable by design - no locks needed
 - **🔌 Extensible**: Cross-library capability attachment and discovery
-- **📦 Lightweight**: Core-only 21KB, Registry +16KB additional - zero dependencies, AOT-friendly
+- **📦 Lightweight**: Single package ~28 KB (no dependencies, AOT-friendly)
 - **🎯 Contract-Based**: Explicit registration semantics - subjects need no interfaces
-- **💾 Smart Memory**: Automatic cleanup with weak references for reference types, explicit control for value types
+- **💾 Smart Memory**: Reference types use ConditionalWeakTable for automatic cleanup; value types stored in ConcurrentDictionary
 
 ## Install
 
-**Choose your architecture:**
+Install the single package:
 
 ```bash
-# Registry Architecture - Global composition discovery (~37 KB total)
 dotnet add package Cocoar.Capabilities
-
-# Core-Only Architecture - Maximum performance (~21 KB)
-dotnet add package Cocoar.Capabilities.Core
 ```
 
-> **Package sizes:** Core ≈ **21 KB**. Registry adds ≈ **16 KB** additional. Zero dependencies, AOT-friendly.
+Registry behavior (global lookup) and composer tracking are now configured per `CapabilityScope` via `CapabilityScopeOptions`; no separate "Core" package is required.
 
 ## Quick Start
 
@@ -67,28 +64,21 @@ public record ValidationCapability<T>(Func<T, bool> Validator) : ICapability<T>;
 
 ### 2. Attach Capabilities to Objects
 
-**Core-Only Approach** (maximum performance):
 ```csharp
+using var scope = new CapabilityScope();
 var userService = new UserService();
 
-// Build immutable composition (store in your DI/cache/lifecycle)
-var composition = Composer.For(userService)
+// Build immutable composition (store it yourself or rely on scope registries if enabled)
+var composition = scope.For(userService)
     .Add(new LoggingCapability<UserService>(LogLevel.Debug, "UserManagement"))
     .Add(new CachingCapability<UserService>(TimeSpan.FromMinutes(5)))
     .Add(new ValidationCapability<UserService>(user => user.IsValid()))
     .Build();
-```
 
-**Registry Approach** (global discovery):
-```csharp
-var userService = new UserService();
-
-// Build and register globally (requires Cocoar.Capabilities package)
-var composition = Composer.For(userService)
-    .Add(new LoggingCapability<UserService>(LogLevel.Debug, "UserManagement"))
-    .Add(new CachingCapability<UserService>(TimeSpan.FromMinutes(5)))
-    .Add(new ValidationCapability<UserService>(user => user.IsValid()))
-    .BuildAndRegister(); // Now discoverable globally
+// Enable registration explicitly at build time
+var registered = scope.For(userService)
+    .Add(new LoggingCapability<UserService>(LogLevel.Info, "UserManagement"))
+    .Build(useRegistry: true); // discoverable via scope.Compositions
 ```
 
 ### 3. Query and Use Capabilities
@@ -110,14 +100,11 @@ if (composition.Has<CachingCapability<UserService>>())
 }
 ```
 
-**Global Discovery** (Registry package only):
+**Global Discovery (per-scope)**
 ```csharp
-// Find compositions registered globally
-var globalComposition = Composition.FindOrDefault(userService);
-if (globalComposition != null)
-{
-    var capabilities = globalComposition.GetAll<LoggingCapability<UserService>>();
-}
+using var scope = new CapabilityScope(new CapabilityScopeOptions { UseCompositionRegistry = true });
+scope.For(userService).Add(new LoggingCapability<UserService>(LogLevel.Debug, "UserManagement")).Build();
+var again = scope.Compositions.FindOrDefault(userService);
 ```
 
 ## Core Concepts
@@ -216,6 +203,8 @@ public record OrderedMiddleware<T>(int Priority) : ICapability<T>, IOrderedCapab
 var middleware = composition.GetAll<OrderedMiddleware<T>>(); // Pre-sorted
 ```
 
+Ordering is entirely opt-in: if no capability implements `IOrderedCapability`, no ordering scan or sort occurs (zero overhead path). When ordering is present, a single stable sort is performed at build/recompose time; enumerations reuse the pre-ordered array (no per-call sorting). See Ordering benchmarks in `Cocoar.Capabilities.Benchmarks` for measured build deltas across random, sorted, reverse, and duplicate-priority scenarios.
+
 ### Cross-Project Extension Methods
 Enable clean separation without circular dependencies:
 ```csharp
@@ -228,73 +217,72 @@ public static Composer<T> AsSingleton<T>(this Composer<T> composer)
     => composer.Add(new SingletonLifetimeCapability<T>());
 
 // Usage: both work together seamlessly
-Composer.For(service).AddLogging(LogLevel.Info).AsSingleton().Build();
+using var scope2 = new CapabilityScope();
+scope2.For(service).AddLogging(LogLevel.Info).AsSingleton().Build();
 ```
 
 ## Performance & Architecture
 
-### Core vs Registry Performance
+### Registry Participation
 
-Cocoar.Capabilities offers **two architectures** depending on your composition lifecycle needs:
-
-#### **Core-Only Architecture** (`Cocoar.Capabilities.Core`)
-Direct composition handling - you manage composition lifetimes:
+Each `CapabilityScope` can optionally track composers and/or compositions. Both options default to `true` but can be disabled for minimal overhead:
 
 ```csharp
-var composition = Composer.For(subject).Add(...).Build();
-// You store and pass composition around as needed
+var scope = new CapabilityScope(new CapabilityScopeOptions
+{
+    UseComposerRegistry = false,
+    UseCompositionRegistry = false
+});
+
+// Force registration for a single build even if disabled globally
+var composition = scope.For(subject)
+    .Add(new SomeCapability<Subject>())
+    .Build(useRegistry: true);
+
+// Discover later if registered
+var found = scope.Compositions.FindOrDefault(subject);
 ```
 
-**Performance characteristics:**
-- **Build**: ~4.6 μs (50 capabilities), ~42 μs (500 capabilities)  
-- **Query**: ~142 ns (feature queries), ~1 μs (all capabilities)
-- **Memory**: 11-102 KB build allocations, 320B-1.2KB query allocations
+### Performance Summary (High-Level)
 
-#### **Registry Architecture** (`Cocoar.Capabilities`)
-Automatic composition storage and global retrieval:
+Instead of embedding raw microsecond/nanosecond figures (easy to misinterpret without hardware & runtime context), we summarize behavior qualitatively:
 
-```csharp
-var composition = Composer.For(subject).Add(...).BuildAndRegister();
-// Later: var composition = Composition.FindOrDefault(subject);
-```
+- **Build Time**: Core is the baseline; Registry adds a small mostly fixed overhead (registration + key canonicalization). Relative overhead shrinks as capability count grows.
+- **Feature Queries (Get/Has for a specific capability type)**: Essentially the same for both; overhead is usually within typical measurement noise.
+- **Full Enumeration (GetAll for large sets)**: Registry incurs extra indirection; absolute cost remains in the microsecond range but can look large as a percentage because the Core path is extremely small.
+- **Memory**: Registry adds only a few dozen bytes of bookkeeping per registered composition; capability object sizes dominate actual usage.
+- **Scaling Characteristics**: Build scales linearly with number of capabilities; feature queries are near-constant; enumeration scales with result size.
 
-**Performance characteristics:**
-- **Build**: ~8.3 μs (50 capabilities), ~47 μs (500 capabilities) - *+79% and +13% overhead*
-- **Query**: ~151 ns (feature queries), ~8.5 μs (large all capabilities) - *+6% to +757% overhead*
-- **Memory**: Similar to Core with small registry overhead (27-34 bytes)
+For reproducible, versioned benchmark data (including exact numbers, environment, .NET version, and methodology) see the separate document:
 
-### **When to Choose Each Architecture**
+[Detailed performance analysis & methodology →](docs/performance-analysis.md)
 
-**✅ Use Core-Only When:**
-- Building many large compositions (13-79% faster builds)
-- Performing frequent capability queries, especially on large sets (up to 757% faster)
-- You already have object lifecycle management (DI containers, caches, etc.)
-- Memory efficiency is critical
-- Maximum performance is required
+### Choosing Configuration
 
-**✅ Use Registry When:**
-- You need global composition discovery without carrying references
-- Building simple compositions with occasional queries
-- Convenience and ease-of-use outweigh performance considerations
-- You don't have existing object storage mechanisms
+| Disable Registry When | Enable Registry When |
+| --------------------- | ------------------- |
+| You already manage object lifetimes (DI/caches) | You want discovery without passing references |
+| Maximum raw performance matters | Convenience outweighs small overhead |
+| Very frequent queries or large compositions | Occasional queries / simpler compositions |
+| Tight memory / allocation budgets | Simplicity of central lookup |
 
-### **Understanding Registry Overhead**
+### Interpreting Overhead
 
-The Registry overhead exists because **any** composition storage/retrieval system would require:
-1. **Build Phase**: Core composition creation + registration in storage
-2. **Query Phase**: Core query + storage lookup + additional indirection
+Any system that lets you retrieve compositions later must store them somewhere. The Registry just makes this explicit and integrated; its overhead is the inherent cost of that convenience, not a library inefficiency.
 
-This is **not** a library limitation - it's the inherent cost of any persistent composition storage. If you need global access to compositions without carrying references, some storage mechanism is required.
+### Technical Notes
 
-**Key insight**: The performance difference represents the cost of convenience. Choose based on your architecture needs, not just raw numbers.
+- Lock-free via immutable compositions
+- Subject key canonicalization for consistent string value semantics
+- Per-scope customization of key mapping (no global mutable state)
+- Works with reference & value type subjects (automatic cleanup for references)
+- AOT-friendly: no runtime code generation, no external dependencies
 
-### **Technical Details**
-- **Thread Safety**: Lock-free through immutability
-- **Scaling**: Linear build time, constant query time (Core), various patterns (Registry)
-- **Framework Compatibility**: .NET Standard 2.0 for maximum platform support
-- **Memory**: Automatic cleanup with weak references, minimal GC pressure
+If you need concrete numbers for capacity planning, consult the dedicated performance document rather than relying on simplified README summaries.
 
-[View detailed performance analysis →](docs/performance-analysis.md)
+### Migration Note
+
+Older examples referencing separate `Cocoar.Capabilities.Core` vs `Cocoar.Capabilities` packages, static `Composer.For`, `BuildAndRegister()`, or `Composition.FindOrDefault()` should be updated to use `CapabilityScope` and `CapabilityScopeOptions`. See `docs/static-api-migration-strategy.md` for detailed guidance.
 
 ## Documentation
 
@@ -308,6 +296,7 @@ This is **not** a library limitation - it's the inherent cost of any persistent 
 - [Capability Ordering](docs/guides/capability-ordering.md) - Deterministic processing sequences
 - [Tuple Contract Syntax](docs/guides/tuple-contracts.md) - Multiple contract registration
 - [Memory Management](docs/guides/memory-management.md) - Lifecycle and performance optimization
+- [Lifecycle & Disposal](docs/lifecycle-and-disposal.md) - Scope disposal effects and composition survivability
 
 ### Examples & Patterns
 - [Configuration System](docs/examples/configuration-system.md) - Real-world cross-project architecture

@@ -94,7 +94,7 @@ public record DatabasePrimaryCapability<T> : IPrimaryCapability<T>;
 
 ### Compositions (Immutable Containers)
 
-A **composition** is an immutable container storing all capabilities for a specific subject:
+A **composition** is an immutable container storing all capabilities for a specific subject. Each `CapabilityScope` owns an isolated in-memory registry; registries are no longer injectable or replaceable. This guarantees invariant behavior and prevents accidental divergence caused by custom registry implementations.
 
 ```csharp
 // Build composition
@@ -111,6 +111,33 @@ var validators = composition.GetAll<IValidationCapability<UserService>>();
 ```
 
 **Design Decision**: Immutability provides thread safety without locks and prevents accidental modification.
+
+### Subject Identity & Canonicalization
+
+Subjects are classified as value-like or reference-like for storage. Value-like subjects (value types and canonicalized references such as `string`) are stored in a strong keyed dictionary; reference-like subjects are stored via weak references (automatic cleanup when the subject is collected).
+
+`string` subjects receive **value semantics** through an internal canonicalization layer: two distinct string instances with identical content map to the same composition. This is implemented via a per-scope `SubjectKeyCanonicalizer`.
+
+You can customize string canonicalization (e.g. case-insensitive, trimming) per scope by providing one or more `ISubjectKeyMapper` implementations in `CapabilityScopeOptions.SubjectKeyMappers`:
+
+```csharp
+public sealed class CaseInsensitiveTrimMapper : ISubjectKeyMapper
+{
+    public bool CanHandle(Type t) => t == typeof(string);
+    public object Map(object subject) => new StringSubjectKey(((string)subject).Trim().ToUpperInvariant());
+}
+
+var scope = new CapabilityScope(new CapabilityScopeOptions
+{
+    SubjectKeyMappers = new ISubjectKeyMapper[] { new CaseInsensitiveTrimMapper() }
+});
+
+// These refer to the same canonical subject
+var a = scope.For("  foo  ").Add(new LoggingCapability<string>(LogLevel.Info)).Build();
+var b = scope.Compositions.FindOrDefault("FOO"); // same composition
+```
+
+Only string mappers are currently recognized; additional reference-type canonicalization may be added in the future if real use cases emerge.
 
 ## Type System Design
 
@@ -164,24 +191,41 @@ var composition = Composer.For(service).Add(capability).Build();
 // Automatically cleaned up when service is garbage collected
 ```
 
-**Design Decision**: Different strategies optimize for value type immutability and reference type lifecycle management.
+**Design Decision**: Different strategies optimize for value type immutability and reference type lifecycle management. String subjects are canonicalized to behave like value types for lookup and removal consistency.
 
 ## Advanced Concepts
 
 ### Primary Capabilities
 
-**Primary capabilities** represent the core identity or main behavior of a subject:
+**Primary capabilities** represent the core identity or main behavior of a subject. Exactly one primary capability may exist per subject.
+
+Registration rules (fail-fast enforced):
+
+1. First primary can be registered via any of: Add, AddAs<IPrimaryCapability<T>>, AddAs<(contracts including IPrimaryCapability<T>)>, or WithPrimary(primary)
+2. To replace an existing primary you MUST call WithPrimary(newPrimary)
+3. Add / AddAs attempts after a primary exists throw InvalidOperationException
+4. WithPrimary(null) removes the existing primary
+5. A tuple contract cannot contain more than one IPrimaryCapability<T> marker (throws)
+6. TryAdd / TryAddAs involving a new primary after one exists silently no-op (never replace)
 
 ```csharp
-// Only one primary capability allowed per subject
+// First time registration (any method OK)
+composer.Add(new DatabasePrimaryCapability<UserService>());
+
+// Replacement (must use WithPrimary)
 composer.WithPrimary(new DatabasePrimaryCapability<UserService>());
 
-// Query primary capabilities
+// Removal
+composer.WithPrimary(null);
+
+// Query primary capability
 if (composition.TryGetPrimary(out var primary))
 {
     // Use primary behavior
 }
 ```
+
+Why WithPrimary for replacement? It makes intent explicit and prevents accidental overwrites hidden among many Add(...) calls.
 
 **Use Cases**: Configuration strategies, core behaviors, identity markers.
 
