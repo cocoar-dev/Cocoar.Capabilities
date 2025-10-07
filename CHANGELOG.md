@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2024-10-04
+
+### 🚨 BREAKING CHANGES
+
+**Major Architecture Refactor**: Replaced static `Composer.For()` API with scoped `CapabilityScope` pattern for better resource management and testability.
+
+**Before:**
+```csharp
+var composition = Composer.For(subject).Add(capability).Build();
+```
+
+**After:**
+```csharp
+using var scope = new CapabilityScope();
+var composition = scope.For(subject).Add(capability).Build();
+```
+
+**Package Changes:**
+- Removed `Cocoar.Capabilities.Core` package 
+- Consolidated all functionality into `Cocoar.Capabilities` (~28KB)
+
+**Migration:** See `docs/static-api-migration-strategy.md` for upgrade guide.
+
+### Added
+- `CapabilityScope` - Central scoped container with `IDisposable` support
+- `CapabilityScopeOptions` - Configuration options for scope behavior
+- Enhanced registry APIs for composer and composition operations
+- Comprehensive documentation and migration guides
+
+### Changed
+- Improved performance: ~25ns registry lookups, ~51ns feature queries, ~4.5μs builds
+- Enhanced memory management with automatic cleanup for reference types
+- Better type safety and error handling
+
+### Removed
+- `Cocoar.Capabilities.Core.Composer` static class
+- `Cocoar.Capabilities.ComposerExtensions`
+- `Cocoar.Capabilities.CompositionRegistry`
+
 ## [0.10.0] - 2025-10-03
 
 ### 🎉 First Public Release
