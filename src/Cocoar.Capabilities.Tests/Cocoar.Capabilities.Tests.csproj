@@ -2,8 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
     <!-- Relax analyzer rules for tests -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningLevel>3</WarningLevel>
@@ -19,7 +21,6 @@
 
   <!-- ===== PROJECT REFERENCES ===== -->
   <ItemGroup>
-    <ProjectReference Include="..\Cocoar.Capabilities.Core\Cocoar.Capabilities.Core.csproj" />
     <ProjectReference Include="..\Cocoar.Capabilities\Cocoar.Capabilities.csproj" />
   </ItemGroup>
 

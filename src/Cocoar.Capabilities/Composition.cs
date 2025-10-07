@@ -1,57 +1,170 @@
-using Cocoar.Capabilities.Core;
-
 namespace Cocoar.Capabilities;
 
-public static class Composition
+internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubject : notnull
 {
-    public static bool TryFind<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull
+    private IReadOnlyDictionary<Type, Array> _capabilitiesByType;
+    private int _totalCapabilityCount;
+
+    internal Composition(
+        TSubject subject,
+        IReadOnlyDictionary<Type, Array> capabilitiesByType,
+        int totalCapabilityCount)
     {
-        return CompositionRegistryCore.TryGet(subject, out composition);
+        Subject = subject ?? throw new ArgumentNullException(nameof(subject));
+        _capabilitiesByType = capabilitiesByType ?? throw new ArgumentNullException(nameof(capabilitiesByType));
+        _totalCapabilityCount = totalCapabilityCount;
     }
 
-    public static IComposition<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    public TSubject Subject { get; }
+
+    object IComposition.Subject => Subject!;
+
+    public int TotalCapabilityCount => _totalCapabilityCount;
+
+    public bool HasPrimary()
     {
-        return CompositionRegistryCore.TryGet(subject, out var composition) ? composition : null;
+        return Has<IPrimaryCapability<TSubject>>();
     }
 
-    public static IComposition<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull
+    public bool HasPrimary<TPrimaryCapability>()
+        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
     {
-        if (CompositionRegistryCore.TryGet(subject, out var composition))
-            return composition;
-        
-        throw new InvalidOperationException($"No composition found for subject of type '{typeof(TSubject).Name}'.");
+        return Has<TPrimaryCapability>();
     }
 
-    public static bool TryFind(object subject, out IComposition composition)
+    public bool TryGetPrimary(out IPrimaryCapability<TSubject> primary)
     {
-        if (subject is null) throw new ArgumentNullException(nameof(subject));
-        return CompositionRegistryCore.TryGet(subject, out composition!);
+        var primaryCapabilities = GetAll<IPrimaryCapability<TSubject>>();
+        if (primaryCapabilities.Count > 0)
+        {
+            primary = primaryCapabilities[0];
+            return true;
+        }
+        primary = null!;
+        return false;
     }
 
-    public static IComposition? FindOrDefault(object subject)
+    public IPrimaryCapability<TSubject>? GetPrimaryOrDefault()
     {
-        if (subject is null) throw new ArgumentNullException(nameof(subject));
-        return CompositionRegistryCore.TryGet(subject, out IComposition composition) ? composition : null;
+        TryGetPrimary(out var primary);
+        return primary;
     }
 
-    public static IComposition FindRequired(object subject)
+    public IPrimaryCapability<TSubject> GetPrimary()
     {
-        if (subject is null) throw new ArgumentNullException(nameof(subject));
-        if (CompositionRegistryCore.TryGet(subject, out IComposition composition))
-            return composition;
-        
-        throw new InvalidOperationException($"No composition found for subject of type '{subject.GetType().Name}'.");
+        if (TryGetPrimary(out var primary))
+        {
+            return primary;
+        }
+        throw new InvalidOperationException($"Primary capability not found for subject '{Subject?.GetType().Name}'.");
     }
-    
-    public static bool Remove<TSubject>(TSubject subject) where TSubject : notnull
+
+    public bool TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary)
+        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
     {
-        if (subject is null) throw new ArgumentNullException(nameof(subject));
-        return CompositionRegistryCore.Remove(subject);
+        if (TryGetPrimary(out var basePrimary) && basePrimary is TPrimaryCapability typed)
+        {
+            primary = typed;
+            return true;
+        }
+        primary = null!;
+        return false;
     }
-    
-    public static bool Remove(object subject)
+
+    public TPrimaryCapability? GetPrimaryOrDefaultAs<TPrimaryCapability>()
+        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
     {
-        if (subject is null) throw new ArgumentNullException(nameof(subject));
-        return CompositionRegistryCore.Remove(subject);
+        TryGetPrimaryAs<TPrimaryCapability>(out var primary);
+        return primary;
+    }
+
+    public TPrimaryCapability GetRequiredPrimaryAs<TPrimaryCapability>()
+        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
+    {
+        if (TryGetPrimaryAs<TPrimaryCapability>(out var primary))
+        {
+            return primary;
+        }
+        throw new InvalidOperationException(
+            $"Primary capability of type '{typeof(TPrimaryCapability).Name}' not found for subject '{typeof(TSubject).Name}'.");
+    }
+
+    public IReadOnlyList<TCapability> GetAll<TCapability>() 
+        where TCapability : class, ICapability<TSubject>
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
+        {
+            return Array.Empty<TCapability>();
+        }
+
+        // Arrays are already stably ordered during build; just project to the typed result.
+        var typed = new TCapability[arr.Length];
+        for (int i = 0; i < arr.Length; i++)
+        {
+            typed[i] = (TCapability)arr.GetValue(i)!;
+        }
+        return typed;
+    }
+
+    public IReadOnlyList<ICapability<TSubject>> GetAll()
+    {
+        if (_capabilitiesByType.Count == 0)
+            return Array.Empty<ICapability<TSubject>>();
+
+        var list = new List<ICapability<TSubject>>(_totalCapabilityCount);
+        foreach (var array in _capabilitiesByType.Values)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                list.Add((ICapability<TSubject>)array.GetValue(i)!);
+            }
+        }
+
+        if (list.Count > 1)
+        {
+            // Stable global ordering across different type buckets.
+            bool hasOrdered = false;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] is IOrderedCapability)
+                {
+                    hasOrdered = true; break;
+                }
+            }
+            if (hasOrdered)
+            {
+                // Use stable sort (CapabilityOrdering) via a temp typed list.
+                CapabilityOrdering.SortInPlace(list);
+            }
+        }
+
+        return list.Count == 0 ? Array.Empty<ICapability<TSubject>>() : list.ToArray();
+    }
+
+    public bool Has<TCapability>() 
+        where TCapability : class, ICapability<TSubject>
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0) return false;
+        // Since array only stores capabilities registered for this type, first element existence suffices.
+        return true;
+    }
+
+    public int Count<TCapability>() 
+        where TCapability : class, ICapability<TSubject>
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0) return 0;
+        return arr.Length; // All entries in the bucket are of the registered type.
+    }
+
+    internal IReadOnlyDictionary<Type, Array> GetCapabilitiesByType() => _capabilitiesByType;
+    internal void UpdateCapabilities(
+        IReadOnlyDictionary<Type, Array> capabilitiesByType,
+        int totalCapabilityCount)
+    {
+        _capabilitiesByType = capabilitiesByType ?? throw new ArgumentNullException(nameof(capabilitiesByType));
+        _totalCapabilityCount = totalCapabilityCount;
     }
 }
