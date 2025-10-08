@@ -19,17 +19,17 @@ public sealed class CapabilityScope : IDisposable
     internal bool IsDisposed => _disposed;
     public ComposerRegistryApi Composers => _composers;
     public CompositionRegistryApi Compositions => _compositions;
-    public Composer<TSubject> For<TSubject>(TSubject subject, bool? useRegistry = null) where TSubject : notnull
+    public Composer For(object subject, bool? useRegistry = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(subject);
-        return new Composer<TSubject>(subject, _options, _sharedRegistry, useRegistry);
+        return new Composer(subject, _options, _sharedRegistry, useRegistry);
     }
-    public Composer<TSubject> Recompose<TSubject>(IComposition<TSubject> composition, bool? useRegistry = null) where TSubject : notnull
+    public Composer Recompose(IComposition composition, bool? useRegistry = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(composition);
-        return new Composer<TSubject>(composition, _options, _sharedRegistry, useRegistry);
+        return new Composer(composition, _options, _sharedRegistry, useRegistry);
     }
 
     public void Dispose()

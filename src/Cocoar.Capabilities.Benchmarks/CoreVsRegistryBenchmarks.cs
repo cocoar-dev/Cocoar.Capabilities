@@ -8,17 +8,17 @@ namespace Cocoar.Capabilities.Benchmarks;
 public class CoreVsRegistryBenchmarks
 {
     public record TestSubject(int Id, string Name);
-    public record FeatureCapability(string Name) : ICapability<TestSubject>;
-    public record ConfigCapability(string Key, string Value) : ICapability<TestSubject>;
-    public record ValidationCapability(string Rule) : ICapability<TestSubject>;
-    public record CachingCapability(string CacheKey, TimeSpan Duration) : ICapability<TestSubject>;
-    public record LoggingCapability(string LoggerName) : ICapability<TestSubject>;
-    public record SecurityCapability(string Permission, string Role) : ICapability<TestSubject>;
-    public record MonitoringCapability(string MetricName) : ICapability<TestSubject>;
-    public record RetryCapability(string Operation, int MaxRetries) : ICapability<TestSubject>;
+    public record FeatureCapability(string Name) ;
+    public record ConfigCapability(string Key, string Value) ;
+    public record ValidationCapability(string Rule) ;
+    public record CachingCapability(string CacheKey, TimeSpan Duration) ;
+    public record LoggingCapability(string LoggerName) ;
+    public record SecurityCapability(string Permission, string Role) ;
+    public record MonitoringCapability(string MetricName) ;
+    public record RetryCapability(string Operation, int MaxRetries) ;
     
-    private IComposition<TestSubject> _coreComposition = null!;
-    private IComposition<TestSubject> _registryComposition = null!;
+    private IComposition _coreComposition = null!;
+    private IComposition _registryComposition = null!;
     private TestSubject _registrySubject = null!;
 
     [GlobalSetup]
@@ -43,14 +43,14 @@ public class CoreVsRegistryBenchmarks
 
     [Benchmark(Description = "Core: Build 50 caps (fast)")]
     [BenchmarkCategory("Build", "Core")]
-    public IComposition<TestSubject> Build_Core_50()
+    public IComposition Build_Core_50()
     {
         return CreateCoreComposition(1, 50);
     }
 
     [Benchmark(Description = "Registry: Build + Register 50 caps")]
     [BenchmarkCategory("Build", "Registry")]
-    public IComposition<TestSubject> Build_Registry_50()
+    public IComposition Build_Registry_50()
     {
         var subject = new TestSubject(100, "BuildTest");
         var composition = CreateRegistryComposition(subject, 50);
@@ -62,14 +62,14 @@ public class CoreVsRegistryBenchmarks
 
     [Benchmark(Description = "Core: Build 200 caps (fast)")]
     [BenchmarkCategory("Build", "Core")]
-    public IComposition<TestSubject> Build_Core_200()
+    public IComposition Build_Core_200()
     {
         return CreateCoreComposition(1, 200);
     }
 
     [Benchmark(Description = "Registry: Build + Register 200 caps")]
     [BenchmarkCategory("Build", "Registry")]
-    public IComposition<TestSubject> Build_Registry_200()
+    public IComposition Build_Registry_200()
     {
         var subject = new TestSubject(200, "BuildTest");
         var composition = CreateRegistryComposition(subject, 200);
@@ -113,7 +113,7 @@ public class CoreVsRegistryBenchmarks
 
     [Benchmark(Description = "Core: Direct reference (fastest)")]
     [BenchmarkCategory("Lookup", "Core")]
-    public IComposition<TestSubject> Lookup_Core_DirectAccess()
+    public IComposition Lookup_Core_DirectAccess()
     {
         // Core pattern: Direct composition reference (zero overhead)
         return _coreComposition;
@@ -121,7 +121,7 @@ public class CoreVsRegistryBenchmarks
 
     [Benchmark(Description = "Registry: Global FindOrDefault")]
     [BenchmarkCategory("Lookup", "Registry")]
-    public IComposition<TestSubject>? Lookup_Registry_FindOrDefault()
+    public IComposition? Lookup_Registry_FindOrDefault()
     {
         // Registry pattern: Global lookup (convenience with overhead)
         BenchmarkScopes.Shared.Compositions.TryFind(_registrySubject, out var composition);
@@ -138,7 +138,7 @@ public class CoreVsRegistryBenchmarks
 
 
 
-    private static IComposition<TestSubject> CreateCoreComposition(int subjects, int capabilitiesPerSubject)
+    private static IComposition CreateCoreComposition(int subjects, int capabilitiesPerSubject)
     {
         var subject = new TestSubject(0, "CoreSubject");
         // Use lightweight scope (registries disabled)
@@ -153,7 +153,7 @@ public class CoreVsRegistryBenchmarks
         return composer.Build(); // registries disabled => no registration
     }
 
-    private static IComposition<TestSubject> CreateRegistryComposition(TestSubject subject, int capabilitiesPerSubject)
+    private static IComposition CreateRegistryComposition(TestSubject subject, int capabilitiesPerSubject)
     {
         var composer = BenchmarkScopes.Shared.For(subject);
         
@@ -166,7 +166,7 @@ public class CoreVsRegistryBenchmarks
         return composer.Build(useRegistry: true);
     }
     
-    private static ICapability<TestSubject> CreateCapability(int subjectId, int capabilityId)
+    private static ICapability CreateCapability(int subjectId, int capabilityId)
     {
         return (capabilityId % 8) switch
         {

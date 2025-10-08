@@ -4,7 +4,7 @@ namespace Cocoar.Capabilities.Tests;
 
 public class SubjectKeyCanonicalizerTests
 {
-    private sealed record Cap(string Name) : ICapability<string>;
+    private sealed record Cap(string Name) ;
 
     private sealed class UppercaseStringMapper : ISubjectKeyMapper
     {

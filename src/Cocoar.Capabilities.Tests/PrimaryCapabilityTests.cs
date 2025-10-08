@@ -179,13 +179,13 @@ public class PrimaryCapabilityTests
         using var scope = NewScope();
         var subject = new StringSubject("p15");
         var builder = scope.For(subject)
-                           .AddAs<IPrimaryCapability<StringSubject>>(new PrimaryTestCapability("First"));
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<IPrimaryCapability<StringSubject>>(new AlternatePrimaryCapability("Second")));
+                           .AddAs<IPrimaryCapability>(new PrimaryTestCapability("First"));
+        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<IPrimaryCapability>(new AlternatePrimaryCapability("Second")));
         Assert.Contains("primary capability is already set", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private record TuplePrimaryCapability(string Name) : IPrimaryCapability<StringSubject>, ITestContract;
-    private record SecondTuplePrimary(string Name) : IPrimaryCapability<StringSubject>, ITestContract;
+    private record TuplePrimaryCapability(string Name) : IPrimaryCapability, ITestContract;
+    private record SecondTuplePrimary(string Name) : IPrimaryCapability, ITestContract;
 
     [Fact]
     public void AddAs_TupleContainingPrimary_WhenAlreadyPresent_Throws()
@@ -194,7 +194,7 @@ public class PrimaryCapabilityTests
         var subject = new StringSubject("p16");
         var builder = scope.For(subject)
                            .Add(new PrimaryTestCapability("First"));
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability<StringSubject>, ITestContract)>(new TuplePrimaryCapability("Second")));
+        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability, ITestContract)>(new TuplePrimaryCapability("Second")));
         Assert.Contains("primary capability is already set", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -204,7 +204,7 @@ public class PrimaryCapabilityTests
         using var scope = NewScope();
         var subject = new StringSubject("p17");
         var builder = scope.For(subject);
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability<StringSubject>, IPrimaryCapability<StringSubject>)>(new TuplePrimaryCapability("Both")));
+        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability, IPrimaryCapability)>(new TuplePrimaryCapability("Both")));
         Assert.Contains("Multiple primary capability contracts", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -230,10 +230,10 @@ public class PrimaryCapabilityTests
         using var scope = NewScope();
         var subject = new StringSubject("p19");
         var builder = scope.For(subject)
-                           .AddAs<IPrimaryCapability<StringSubject>>(new PrimaryTestCapability("Original"));
+                           .AddAs<IPrimaryCapability>(new PrimaryTestCapability("Original"));
 
         // Should no-op, not throw, not replace
-        builder.TryAddAs<IPrimaryCapability<StringSubject>>(new AlternatePrimaryCapability("Ignored"));
+        builder.TryAddAs<IPrimaryCapability>(new AlternatePrimaryCapability("Ignored"));
 
         var comp = builder.Build();
         var primary = comp.GetRequiredPrimaryAs<PrimaryTestCapability>();

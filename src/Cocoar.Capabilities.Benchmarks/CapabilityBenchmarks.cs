@@ -8,17 +8,17 @@ namespace Cocoar.Capabilities.Benchmarks;
 public class CapabilityBenchmarks
 {
     public record TestSubject(int Id, string Name);
-    public record FeatureCapability(string Name) : ICapability<TestSubject>;
-    public record ConfigCapability(string Key, string Value) : ICapability<TestSubject>;
-    public record ValidationCapability(string Rule) : ICapability<TestSubject>;
-    public record CachingCapability(string CacheKey, TimeSpan Duration) : ICapability<TestSubject>;
-    public record LoggingCapability(string LoggerName) : ICapability<TestSubject>;
-    public record SecurityCapability(string Permission, string Role) : ICapability<TestSubject>;
-    public record MonitoringCapability(string MetricName) : ICapability<TestSubject>;
-    public record RetryCapability(string Operation, int MaxRetries) : ICapability<TestSubject>;
+    public record FeatureCapability(string Name) ;
+    public record ConfigCapability(string Key, string Value) ;
+    public record ValidationCapability(string Rule) ;
+    public record CachingCapability(string CacheKey, TimeSpan Duration) ;
+    public record LoggingCapability(string LoggerName) ;
+    public record SecurityCapability(string Permission, string Role) ;
+    public record MonitoringCapability(string MetricName) ;
+    public record RetryCapability(string Operation, int MaxRetries) ;
     
-    private IComposition<TestSubject> _small10x50 = null!;
-    private IComposition<TestSubject> _large1000x50 = null!;
+    private IComposition _small10x50 = null!;
+    private IComposition _large1000x50 = null!;
     private TestSubject _registryTestSubject = null!;
     private TestSubject _registryTestSubjectLarge = null!;
 
@@ -35,7 +35,7 @@ public class CapabilityBenchmarks
         CreateAndRegisterComposition(_registryTestSubjectLarge, 500);
     }
 
-    private static IComposition<TestSubject> CreateComposition(int subjects, int capabilitiesPerSubject)
+    private static IComposition CreateComposition(int subjects, int capabilitiesPerSubject)
     {
         if (subjects == 1)
         {
@@ -69,7 +69,7 @@ public class CapabilityBenchmarks
         }
     }
     
-    private static IComposition<TestSubject> CreateAndRegisterComposition(TestSubject subject, int capabilitiesCount)
+    private static IComposition CreateAndRegisterComposition(TestSubject subject, int capabilitiesCount)
     {
         var composer = BenchmarkScopes.Shared.For(subject);
         
@@ -82,7 +82,7 @@ public class CapabilityBenchmarks
         return composer.Build(useRegistry: true);
     }
     
-    private static ICapability<TestSubject> CreateCapability(int subjectId, int capabilityId)
+    private static ICapability CreateCapability(int subjectId, int capabilityId)
     {
         return (capabilityId % 8) switch
         {
@@ -99,11 +99,11 @@ public class CapabilityBenchmarks
 
     // Build Performance Tests - Systematic Scaling
     [Benchmark] 
-    public IComposition<TestSubject> Build_Small_1x50()
+    public IComposition Build_Small_1x50()
     {
         return CreateComposition(1, 50);
     }    [Benchmark] 
-    public IComposition<TestSubject> Build_Large_1x500()
+    public IComposition Build_Large_1x500()
     {
         return CreateComposition(1, 500);
     }
@@ -136,7 +136,7 @@ public class CapabilityBenchmarks
 
     // Registry comparison - Build + Register + Retrieve from Registry
     [Benchmark] 
-    public IComposition<TestSubject> Build_Registry_Small_1x50()
+    public IComposition Build_Registry_Small_1x50()
     {
         // Use same pattern as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");
@@ -156,7 +156,7 @@ public class CapabilityBenchmarks
     }
     
     [Benchmark] 
-    public IComposition<TestSubject> Build_Registry_Large_1x500()
+    public IComposition Build_Registry_Large_1x500()
     {
         // Use SAME subject ID as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");

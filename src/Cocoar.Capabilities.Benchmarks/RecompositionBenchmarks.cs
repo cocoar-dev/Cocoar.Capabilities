@@ -7,11 +7,11 @@ namespace Cocoar.Capabilities.Benchmarks;
 public class RecompositionBenchmarks : IDisposable
 {
     public record TestSubject(int Id, string Name);
-    public record Cap(string Name) : ICapability<TestSubject>;
-    public record Primary(string Name) : IPrimaryCapability<TestSubject>;
+    public record Cap(string Name) ;
+    public record Primary(string Name) : IPrimaryCapability;
 
     private CapabilityScope _scope = null!;
-    private IComposition<TestSubject> _baseComposition = null!;
+    private IComposition _baseComposition = null!;
     private TestSubject _subject = null!;
 
     [GlobalSetup]
@@ -26,14 +26,14 @@ public class RecompositionBenchmarks : IDisposable
     }
 
     [Benchmark(Description = "Recompose: no changes")] 
-    public IComposition<TestSubject> Recompose_NoChange()
+    public IComposition Recompose_NoChange()
     {
         var composer = _scope.Recompose(_baseComposition, useRegistry: true);
         return composer.Build(useRegistry: true); // identity preserved
     }
 
     [Benchmark(Description = "Recompose: add capability")] 
-    public IComposition<TestSubject> Recompose_AddCapability()
+    public IComposition Recompose_AddCapability()
     {
         var composer = _scope.Recompose(_baseComposition, useRegistry: true);
         composer.Add(new Cap("NewCap"));
@@ -41,7 +41,7 @@ public class RecompositionBenchmarks : IDisposable
     }
 
     [Benchmark(Description = "Recompose: replace primary")] 
-    public IComposition<TestSubject> Recompose_ReplacePrimary()
+    public IComposition Recompose_ReplacePrimary()
     {
         var composer = _scope.Recompose(_baseComposition, useRegistry: true);
         composer.WithPrimary(new Primary("P1"));

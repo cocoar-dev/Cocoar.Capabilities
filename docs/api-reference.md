@@ -1,453 +1,372 @@
-# API Reference
-
-Complete reference for all public APIs in Cocoar.Capabilities.
-
-## Package Architecture
-
-Distributed as a single package: **`Cocoar.Capabilities`**.
-
-Scope-level options (`CapabilityScopeOptions`) enable or disable composer and composition registry tracking. No separate *Core* vs *Registry* packages exist anymore. Historical references to dual packaging and static helpers (like `BuildAndRegister()` / `Composition.FindOrDefault`) should be migrated to the `CapabilityScope` model.
-
-## Core Interfaces
-
-### ICapability
-
-Base marker interface for all capabilities.
-
-```csharp
-public interface ICapability { }
-```
-
-### ICapability&lt;in TSubject&gt;
-
-Generic capability interface that defines a capability for a specific subject type.
-
-```csharp
-public interface ICapability<in TSubject> : ICapability { }
-```
-
-**Usage**:
-```csharp
-public record LoggingCapability<T>(LogLevel Level) : ICapability<T>;
-public record CachingCapability<T>(TimeSpan Duration) : ICapability<T>;
-```
-
-### IPrimaryCapability&lt;in T&gt;
-
-Marker interface for primary capabilities. Exactly one primary capability may exist per subject at any time.
-Adding rules:
-
-- First registration may use Add, AddAs, tuple AddAs, or WithPrimary
-- Replacement MUST use WithPrimary(newPrimary)
-- Add / AddAs / tuple AddAs will THROW if a primary already exists
-- WithPrimary(null) removes the current primary
-- Tuples may not contain more than one IPrimaryCapability<> contract
- - TryAdd / TryAddAs of another primary silently no-op (they never replace)
-
-```csharp
-public interface IPrimaryCapability<in T> : ICapability<T> { }
-```
-
-**Usage**:
-```csharp
-public record DatabasePrimaryCapability<T> : IPrimaryCapability<T>;
-
-// First time
-composer.Add(new DatabasePrimaryCapability<UserService>());
-
-// Replacing (must use WithPrimary)
-composer.WithPrimary(new DatabasePrimaryCapability<UserService>());
-
-// Removing
-composer.WithPrimary(null);
-```
-
-## Registry Participation
-
-Registration is controlled per scope and optionally per build call:
-
-```csharp
-using var scope = new CapabilityScope(new CapabilityScopeOptions
-{
-    UseCompositionRegistry = true // default
-});
-
-var composition = scope.For(user)
-    .Add(new LoggingCapability<User>(LogLevel.Info))
-    .Build(); // automatically registered because UseCompositionRegistry=true
-
-// Explicit override (force register even if disabled in options)
-var forced = scope.For(user)
-    .Add(new CachingCapability<User>(TimeSpan.FromMinutes(5)))
-    .Build(useRegistry: true);
-
-// Lookup
-var found = scope.Compositions.FindOrDefault(user);
-```
-
-To migrate from legacy `BuildAndRegister()` + static global lookup, see `static-api-migration-strategy.md`.
-```
-
-### IOrderedCapability
-
-Interface for capabilities that need specific ordering within their type group.
-
-```csharp
-public interface IOrderedCapability
-{
-    int Order { get; }
-}
-```
-
-**Usage**:
-```csharp
-public record OrderedMiddleware<T>(int Priority) : ICapability<T>, IOrderedCapability
-{
-    public int Order => Priority; // Lower values execute first
-}
-```
-
-## Core Types
-
-### IComposition
-
-Non-generic interface for accessing basic composition information.
-
-```csharp
-public interface IComposition
-{
-    object Subject { get; }
-    int TotalCapabilityCount { get; }
-}
-```
-
-### IComposition&lt;TSubject&gt;
-
-Generic interface for typed access to capabilities attached to a subject.
-
-```csharp
-public interface IComposition<TSubject> : IComposition
-{
-    new TSubject Subject { get; }
-
-    // Primary capability methods
-    bool HasPrimary();
-    bool HasPrimary<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
-    bool TryGetPrimary(out IPrimaryCapability<TSubject> primary);
-    IPrimaryCapability<TSubject>? GetPrimaryOrDefault();
-    IPrimaryCapability<TSubject> GetPrimary();
-    bool TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary) where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
-    TPrimaryCapability? GetPrimaryOrDefaultAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
-    TPrimaryCapability GetRequiredPrimaryAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
-
-    // Capability query methods
-    IReadOnlyList<TCapability> GetAll<TCapability>() where TCapability : class, ICapability<TSubject>;
-    IReadOnlyList<ICapability<TSubject>> GetAll();
-    bool Has<TCapability>() where TCapability : class, ICapability<TSubject>;
-    int Count<TCapability>() where TCapability : class, ICapability<TSubject>;
-}
-```
-
-## Builder API
-
-### CapabilityScope
-
-Entry point for creating capability scopes and managing compositions.
-
-```csharp
-public sealed class CapabilityScope : IDisposable
-{
-    // Constructor
-    public CapabilityScope(CapabilityScopeOptions? options = null);
-    
-    // Create composer for subject
-    public Composer<TSubject> For<TSubject>(TSubject subject, bool? useRegistry = null) where TSubject : notnull;
-    
-    // Recomposition from existing composition
-    public Composer<TSubject> Recompose<TSubject>(IComposition<TSubject> composition, bool? useRegistry = null) where TSubject : notnull;
-    
-    // Registry access
-    public ComposerRegistryApi Composers { get; }
-    public CompositionRegistryApi Compositions { get; }
-    
-    // Disposal
-    public void Dispose();
-}
-```
-
-### CapabilityScopeOptions
-
-Configuration options for capability scopes.
-
-```csharp
-public record CapabilityScopeOptions
-{
-    public bool UseComposerRegistry { get; init; } = true;
-    public bool UseCompositionRegistry { get; init; } = true;
-    public IReadOnlyList<ISubjectKeyMapper> SubjectKeyMappers { get; init; } = Array.Empty<ISubjectKeyMapper>();
-}
-```
-
-### Composer&lt;TSubject&gt;
-
-Fluent builder for capability registration (created via `CapabilityScope.For()`).
-
-```csharp
-public sealed class Composer<TSubject> where TSubject : notnull
-{
-    public TSubject Subject { get; }
-
-    // Basic registration
-    public Composer<TSubject> Add(ICapability<TSubject> capability);
-    
-    // Contract registration
-    public Composer<TSubject> AddAs<TContract>(ICapability<TSubject> capability) where TContract : class, ICapability<TSubject>;
-    
-    // Tuple contract registration
-    public Composer<TSubject> AddAs<TContracts>(ICapability<TSubject> capability) where TContracts : ITuple;
-    
-    // Conditional registration
-    public Composer<TSubject> TryAdd<TCapability>(TCapability capability) where TCapability : class, ICapability<TSubject>;
-    public Composer<TSubject> TryAddAs<TContract>(ICapability<TSubject> capability) where TContract : class, ICapability<TSubject>;
-    
-    // Capability removal
-    public Composer<TSubject> RemoveWhere(Func<ICapability<TSubject>, bool> predicate);
-    
-    // Primary capability management
-    public Composer<TSubject> WithPrimary(IPrimaryCapability<TSubject>? primary);
-    
-    // Query builder state
-    public bool HasPrimary();
-    public bool Has<TCapability>() where TCapability : class, ICapability<TSubject>;
-    
-    // Build immutable composition
-    public IComposition<TSubject> Build(bool? useRegistry = null);
-}
-```
-
-## Registry APIs
-
-### ComposerRegistryApi
-
-Scope-level registry for composer lookup and management.
-
-```csharp
-public class ComposerRegistryApi : IDisposable
-{
-    // Find existing composer by subject
-    public bool TryFind<TSubject>(TSubject subject, out Composer<TSubject> composer) where TSubject : notnull;
-    public Composer<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
-    public Composer<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
-    
-    // Remove composer
-    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull;
-    public bool Remove(object subject);
-    
-    public void Dispose();
-}
-```
-
-### CompositionRegistryApi
-
-Scope-level registry for composition lookup and management.
-
-```csharp
-public class CompositionRegistryApi : IDisposable
-{
-    // Generic subject lookup
-    public bool TryFind<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull;
-    public IComposition<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull;
-    public IComposition<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull;
-    
-    // Non-generic subject lookup
-    public bool TryFind(object subject, out IComposition composition);
-    public IComposition? FindOrDefault(object subject);
-    public IComposition FindRequired(object subject);
-    
-    // Composition removal
-    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull;
-    public bool Remove(object subject);
-    
-    public void Dispose();
-}
-```
-
-## Extension Methods
-
-### ReadOnlyListExtensions
-
-Utility extensions for capability collections.
-
-```csharp
-public static class ReadOnlyListExtensions
-{
-    public static void ForEach<T>(this IReadOnlyList<T> list, Action<T> action);
-}
-```
-
-## Configuration
-
-### ISubjectKeyMapper
-
-Interface for custom subject key mapping strategies.
-
-```csharp
-public interface ISubjectKeyMapper
-{
-    bool CanMap(Type subjectType);
-    string MapToKey(object subject);
-}
-```
-
-## Usage Patterns
-
-### Basic Registration and Query
-
-```csharp
-// Create scope and composition
-using var scope = new CapabilityScope();
-var composition = scope.For(subject)
-    .Add(new FirstCapability<Subject>())
-    .Add(new SecondCapability<Subject>())
-    .Build();
-
-// Query capabilities
-var capabilities = composition.GetAll<FirstCapability<Subject>>();
-if (composition.Has<SecondCapability<Subject>>())
-{
-    // Handle capability presence
-}
-```
-
-### Contract-Based Registration
-
-```csharp
-// Register under interface contract
-using var scope = new CapabilityScope();
-var composer = scope.For(subject)
-    .AddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
-
-// Register under multiple contracts (tuple syntax)
-composer.AddAs<(IValidationCapability<Subject>, EmailValidator<Subject>)>(validator);
-```
-composer.AddAs<(IValidationCapability<Subject>, EmailValidator<Subject>)>(validator);
-```
-
-### Primary Capability Usage
-
-```csharp
-// Set primary capability
-using var scope = new CapabilityScope();
-var composition = scope.For(subject)
-    .WithPrimary(new DatabasePrimaryCapability<Subject>())
-    .Build();
-
-// Query primary capability
-if (composition.TryGetPrimary(out var primary))
-{
-    // Use primary capability
-}
-
-var typedPrimary = composition.GetPrimaryOrDefaultAs<DatabasePrimaryCapability<Subject>>();
-```
-
-### Conditional Registration
-
-```csharp
-// Only register if not already present
-using var scope = new CapabilityScope();
-var composer = scope.For(subject)
-    .TryAdd(new LoggingCapability<Subject>(LogLevel.Info))
-    .TryAddAs<IValidationCapability<Subject>>(new EmailValidator<Subject>());
-```
-
-### Capability Removal
-
-```csharp
-// Remove capabilities by predicate
-using var scope = new CapabilityScope();
-var composition = scope.For(subject)
-    .Add(new LoggingCapability<Subject>(LogLevel.Debug, "Debug"))
-    .Add(new LoggingCapability<Subject>(LogLevel.Info, "Info"))
-    .RemoveWhere(cap => cap is LoggingCapability<Subject> log && log.Level == LogLevel.Debug)
-    .Build();
-```
-
-### Scope Registry Usage
-
-```csharp
-// Create scope with configuration
-using var scope = new CapabilityScope(new CapabilityScopeOptions
-{
-    UseCompositionRegistry = true,
-    UseComposerRegistry = true
-});
-
-// Build and register
-var composition = scope.For(subject)
-    .Add(new LoggingCapability<Subject>(LogLevel.Info, "Test"))
-    .Build(); // Automatically registered due to UseCompositionRegistry=true
-
-// Find composition by subject
-var foundComposition = scope.Compositions.FindOrDefault(subject);
-
-// Remove composition
-scope.Compositions.Remove(subject);
-
-// Find composer (if still building)
-var foundComposer = scope.Composers.FindOrDefault(subject);
-```
-
-## Error Handling
-
-### Common Exceptions
-
-**InvalidOperationException**:
-- Thrown when multiple primary capabilities are registered
-- Thrown when required capabilities are not found
-- Thrown when builder is used after `Build()` has been called
-
-**ArgumentException**:
-- Thrown when contract types don't implement `ICapability<TSubject>`
-- Thrown when recomposing with invalid composition types
-
-**ArgumentNullException**:
-- Thrown when null subjects or capabilities are provided
-
-### Exception Examples
-
-```csharp
-// Multiple primary capabilities
-try
-{
-    var composition = Composer.For(subject)
-        .WithPrimary(new FirstPrimary<Subject>())
-        .WithPrimary(new SecondPrimary<Subject>()) // This will throw
-        .Build();
-}
-catch (InvalidOperationException ex)
-{
-    // "Multiple primary capabilities registered for 'Subject'. Only one primary capability is allowed."
-}
-
-// Required capability not found
-try
-{
-    var required = composition.GetRequiredPrimaryAs<MissingPrimary<Subject>>();
-}
-catch (InvalidOperationException ex)
-{
-    // "Primary capability of type 'MissingPrimary' not found for subject 'Subject'."
-}
-```
-
-## Performance Notes
-
-- **Registration**: O(1) for single capabilities, O(k) for tuple registration where k = number of contracts
-- **Query**: O(1) for capability lookup, O(n) for GetAll() where n = capabilities of that type
-- **Memory**: Compositions use array-based storage for optimal performance
-- **Threading**: All operations are thread-safe through immutability
+# Cocoar.Capabilities - API Reference
+
+Complete API reference for the Cocoar.Capabilities library.
+
+## Table of Contents
+
+- [CapabilityScope](#capabilityscope)
+- [CapabilityScopeOptions](#capabilityscopeoptions)
+- [Composer](#composer)
+- [IComposition](#icomposition)
+- [IPrimaryCapability](#iprimarycapability)
+- [ComposerRegistryApi](#composerregistryapi)
+- [CompositionRegistryApi](#compositionregistryapi)
 
 ---
 
-This API reference covers all public interfaces and methods in Cocoar.Capabilities. For usage examples and patterns, see the [guides](guides/) and [examples](examples/) sections.
+## CapabilityScope
+
+Entry point for all capability operations. Manages the lifecycle of composers and compositions.
+
+### Constructors
+
+| Constructor | Description |
+|------------|-------------|
+| `CapabilityScope(CapabilityScopeOptions? options = null)` | Creates a new capability scope with the specified options |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `For(object subject, bool? useRegistry = null)` | `Composer` | Creates a new composer for the specified subject |
+| `Recompose(IComposition composition, bool? useRegistry = null)` | `Composer` | Creates a new composer based on an existing composition |
+| `Dispose()` | `void` | Releases all resources used by the scope |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Composers` | `ComposerRegistryApi` | Provides access to the composer registry |
+| `Compositions` | `CompositionRegistryApi` | Provides access to the composition registry |
+
+### Example
+
+```csharp
+using var scope = new CapabilityScope();
+var composer = scope.For(myObject);
+var composition = composer.Add(new MyCapability()).Build();
+```
+
+---
+
+## CapabilityScopeOptions
+
+Configuration options for a capability scope.
+
+### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `UseComposerRegistry` | `bool` | `false` | Controls whether composers are automatically registered when created |
+| `UseCompositionRegistry` | `bool` | `false` | Controls whether compositions are automatically registered when built |
+| `SubjectKeyMappers` | `List<Func<object, object>>?` | `null` | Optional list of functions to canonicalize subject keys for registry lookups |
+
+### Example
+
+```csharp
+var options = new CapabilityScopeOptions
+{
+    UseComposerRegistry = true,
+    UseCompositionRegistry = true,
+    SubjectKeyMappers = new List<Func<object, object>>
+    {
+        obj => obj is string s ? s.ToLowerInvariant() : obj
+    }
+};
+```
+
+
+---
+
+## Composer
+
+Fluent builder for creating capability compositions.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Subject` | `object` | Gets the subject this composer is building capabilities for |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Add(object capability, int? order = null)` | `Composer` | Adds a capability to the composition |
+| `Add(object capability, Func<object, int> orderSelector)` | `Composer` | Adds a capability with order determined by a selector function |
+| `AddAs<TContract>(object capability, int? order = null)` | `Composer` | Adds a capability and registers it under specific contract type(s) |
+| `AddAs<TContract>(object capability, Func<object, int> orderSelector)` | `Composer` | Adds a capability under specific contract(s) with order selector |
+| `TryAdd<TCapability>(TCapability capability, int? order = null)` | `Composer` | Adds a capability only if it doesn't already exist |
+| `TryAdd<TCapability>(TCapability capability, Func<object, int> orderSelector)` | `Composer` | Try-add variant with order selector |
+| `Has<TCapability>()` | `bool` | Checks if a capability of the specified type has been added |
+| `HasPrimary()` | `bool` | Checks if a primary capability has been added |
+| `Build(bool? useRegistry = null)` | `IComposition` | Builds the final immutable composition |
+
+### Exceptions
+
+| Method | Exception | Condition |
+|--------|-----------|-----------|
+| `Add` | `ArgumentNullException` | If capability is null |
+| `Add` | `InvalidOperationException` | If adding a second primary capability or if already built |
+| `Build` | `InvalidOperationException` | If already built |
+
+### Example
+
+```csharp
+var composition = scope.For(subject)
+    .Add(new Capability1(), order: 10)
+    .Add(new Capability2(), order: 5)
+    .AddAs<(IContract1, IContract2)>(new MultiContract())
+    .TryAdd(new OptionalCapability())
+    .Build();
+```
+
+---
+
+## IComposition
+
+Immutable collection of capabilities attached to a subject. Thread-safe.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Subject` | `object` | Gets the subject this composition is attached to |
+| `TotalCapabilityCount` | `int` | Gets the total number of capabilities in the composition |
+
+### Capability Query Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `GetAll<TCapability>()` | `IReadOnlyList<TCapability>` | Retrieves all capabilities of the specified type in order |
+| `Has<TCapability>()` | `bool` | Checks if any capability of the specified type exists |
+
+### Primary Capability Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `HasPrimary()` | `bool` | Checks if a primary capability exists |
+| `HasPrimary<TPrimaryCapability>()` | `bool` | Checks if a primary capability of specific type exists |
+| `GetPrimary()` | `IPrimaryCapability` | Gets the primary capability (throws if not found) |
+| `GetPrimaryOrDefault()` | `IPrimaryCapability?` | Gets the primary capability or null |
+| `TryGetPrimary(out IPrimaryCapability primary)` | `bool` | Tries to get the primary capability |
+| `GetPrimaryOrDefaultAs<TPrimaryCapability>()` | `TPrimaryCapability?` | Gets the primary capability cast to a specific type, or null |
+| `GetRequiredPrimaryAs<TPrimaryCapability>()` | `TPrimaryCapability` | Gets the primary capability cast to a specific type (throws if not found) |
+| `TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary)` | `bool` | Tries to get the primary capability as a specific type |
+
+### Exceptions
+
+| Method | Exception | Condition |
+|--------|-----------|-----------|
+| `GetPrimary()` | `InvalidOperationException` | If no primary capability exists |
+| `GetRequiredPrimaryAs<T>()` | `InvalidOperationException` | If primary capability doesn't exist or isn't of the specified type |
+
+### Example
+
+```csharp
+// Query capabilities
+var validators = composition.GetAll<IValidator>();
+var hasLogging = composition.Has<ILogger>();
+
+// Work with primary
+if (composition.TryGetPrimary(out var primary))
+{
+    Console.WriteLine($"Primary: {primary}");
+}
+
+// Type-safe primary access
+var userPrimary = composition.GetRequiredPrimaryAs<UserPrimaryCapability>();
+```
+
+---
+
+## IPrimaryCapability
+
+Marker interface indicating a capability that should be the primary capability for an instance.
+
+### Interface Definition
+
+```csharp
+public interface IPrimaryCapability { }
+```
+
+### Rules
+
+| Rule | Description |
+|------|-------------|
+| **Single Primary** | Only one primary capability is allowed per composition |
+| **Exception on Duplicate** | Attempting to add a second primary capability throws `InvalidOperationException` |
+| **Specialized Retrieval** | Primary capabilities have dedicated retrieval methods on `IComposition` |
+
+### Example
+
+```csharp
+public record UserPrimaryCapability(string UserId, string Name) : IPrimaryCapability;
+
+public record DocumentPrimaryCapability(string Id, string Title) : IPrimaryCapability;
+
+// Use in composition
+var composition = scope.For(user)
+    .Add(new UserPrimaryCapability("user123", "John Doe"))
+    .Add(new AdminCapability()) // Non-primary, OK
+    .Build();
+```
+
+---
+
+## ComposerRegistryApi
+
+Provides access to the composer registry for managing active composers.
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Has(object subject)` | `bool` | Checks if a composer exists for the subject |
+| `Find(object subject)` | `Composer` | Finds the composer for the subject (throws if not found) |
+| `FindOrDefault(object subject)` | `Composer?` | Finds the composer or returns null |
+| `TryGet(object subject, out Composer composer)` | `bool` | Tries to get the composer for the subject |
+
+### Example
+
+```csharp
+if (scope.Composers.Has(document))
+{
+    var composer = scope.Composers.Find(document);
+    // Composer is still being built
+}
+```
+
+---
+
+## CompositionRegistryApi
+
+Provides access to the composition registry for managing built compositions.
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Has(object subject)` | `bool` | Checks if a composition exists for the subject |
+| `Find(object subject)` | `IComposition` | Finds the composition for the subject (throws if not found) |
+| `FindOrDefault(object subject)` | `IComposition?` | Finds the composition or returns null |
+| `TryFind(object subject, out IComposition composition)` | `bool` | Tries to find the composition for the subject |
+
+### Example
+
+```csharp
+var composition = scope.Compositions.FindOrDefault(document);
+if (composition != null)
+{
+    var capabilities = composition.GetAll<ICapability>();
+}
+```
+
+---
+
+## Performance Characteristics
+
+| Operation | Complexity | Notes |
+|-----------|-----------|-------|
+| Capability Lookup | O(1) | Dictionary-based lookup |
+| Add Capability | O(1) amortized | List growth |
+| Build Composition | O(n log n) | Sorting by order value |
+| Memory (Post-Build) | Zero allocation | For capability lookups |
+| Registry Lookup | O(1) | With canonical key |
+
+---
+
+## Thread Safety
+
+| Type | Thread Safety | Description |
+|------|--------------|-------------|
+| `CapabilityScope` | ❌ Not thread-safe | Each thread should use its own scope or external synchronization |
+| `Composer` | ❌ Not thread-safe | Should not be shared across threads |
+| `IComposition` | ✅ Thread-safe | Immutable and fully thread-safe, can be safely shared |
+| Registries | ✅ Thread-safe | Internal locking for concurrent access |
+
+---
+
+## Best Practices
+
+| Practice | Description |
+|----------|-------------|
+| **Always Dispose Scopes** | Use `using` statement to ensure proper cleanup |
+| **Don't Reuse Composers** | Create new composers for each composition |
+| **Enable Registries Sparingly** | Only enable when centralized management is needed |
+| **Use Explicit Ordering** | Specify order values for predictable behavior |
+| **Primary for Identity** | Use primary capabilities for the main "identity" of a subject |
+| **Try-Add for Conditionals** | Use `TryAdd` when adding logic is complex |
+| **Recompose for Modifications** | Never try to mutate compositions directly |
+
+---
+
+## Common Design Patterns
+
+### Builder Pattern
+
+```csharp
+public class DocumentBuilder
+{
+    private readonly Composer _composer;
+
+    public DocumentBuilder(CapabilityScope scope, object subject)
+    {
+        _composer = scope.For(subject);
+    }
+
+    public DocumentBuilder WithEditing() 
+    {
+        _composer.Add(new EditCapability());
+        return this;
+    }
+
+    public IComposition Build() => _composer.Build();
+}
+```
+
+### Strategy Pattern
+
+```csharp
+// Add strategies as capabilities, execute in order
+var composition = scope.For(processor)
+    .Add(new ValidationStrategy(), order: 1)
+    .Add(new TransformationStrategy(), order: 2)
+    .Add(new PersistenceStrategy(), order: 3)
+    .Build();
+
+foreach (var strategy in composition.GetAll<IStrategy>())
+{
+    strategy.Execute();
+}
+```
+
+### Chain of Responsibility
+
+```csharp
+var composition = scope.For(request)
+    .Add(new AuthenticationHandler(), order: 1)
+    .Add(new AuthorizationHandler(), order: 2)
+    .Add(new ValidationHandler(), order: 3)
+    .Build();
+
+foreach (var handler in composition.GetAll<IRequestHandler>())
+{
+    if (handler.CanHandle(request))
+    {
+        await handler.HandleAsync(request);
+        break;
+    }
+}
+```
+
+### Decorator Pattern
+
+```csharp
+// Layer capabilities as decorators
+var composition = scope.For(service)
+    .Add(new LoggingDecorator(), order: 1)
+    .Add(new CachingDecorator(), order: 2)
+    .Add(new ValidationDecorator(), order: 3)
+    .Build();
+```

@@ -20,9 +20,9 @@ internal sealed class CapabilityEntry
     public static CapabilityEntry FromBoth(object composer, object composition) =>
         new(composer ?? throw new ArgumentNullException(nameof(composer)), composition ?? throw new ArgumentNullException(nameof(composition)));
 
-    public bool TryGetComposer<TSubject>(out Composer<TSubject> composer) where TSubject : notnull
+    public bool TryGetComposer(out Composer composer)
     {
-        if (_composer is Composer<TSubject> typed)
+        if (_composer is Composer typed)
         {
             composer = typed;
             return true;
@@ -31,33 +31,11 @@ internal sealed class CapabilityEntry
         return false;
     }
 
-    public bool TryGetComposer(out object composer)
+    public bool TryGetComposition(out IComposition composition)
     {
-        if (_composer is not null)
-        {
-            composer = _composer;
-            return true;
-        }
-        composer = default!;
-        return false;
-    }
-
-    public bool TryGetComposition<TSubject>(out IComposition<TSubject> composition) where TSubject : notnull
-    {
-        if (_composition is IComposition<TSubject> typed)
+        if (_composition is IComposition typed)
         {
             composition = typed;
-            return true;
-        }
-        composition = default!;
-        return false;
-    }
-
-    public bool TryGetComposition(out object composition)
-    {
-        if (_composition is not null)
-        {
-            composition = _composition;
             return true;
         }
         composition = default!;

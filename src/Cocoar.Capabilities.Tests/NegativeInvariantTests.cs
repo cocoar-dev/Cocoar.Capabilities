@@ -48,7 +48,7 @@ public class NegativeInvariantTests
     public void For_NullSubject_Throws()
     {
         using var scope = NewScope();
-        Assert.Throws<ArgumentNullException>(() => scope.For<string>(null!));
+        Assert.Throws<ArgumentNullException>(() => scope.For(null!));
     }
 
     [Fact]

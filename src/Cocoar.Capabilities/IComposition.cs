@@ -4,33 +4,28 @@ public interface IComposition
 {
     object Subject { get; }
     int TotalCapabilityCount { get; }
-}
-
-public interface IComposition<TSubject> : IComposition
-{
-    new TSubject Subject { get; }
-
+    
     bool HasPrimary();
     
-    bool HasPrimary<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
+    bool HasPrimary<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability;
 
-    bool TryGetPrimary(out IPrimaryCapability<TSubject> primary);
+    bool TryGetPrimary(out IPrimaryCapability primary);
 
-    IPrimaryCapability<TSubject>? GetPrimaryOrDefault();
+    IPrimaryCapability? GetPrimaryOrDefault();
 
-    IPrimaryCapability<TSubject> GetPrimary();
+    IPrimaryCapability GetPrimary();
 
-    bool TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary) where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
+    bool TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary) where TPrimaryCapability : class, IPrimaryCapability;
 
-    TPrimaryCapability? GetPrimaryOrDefaultAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
+    TPrimaryCapability? GetPrimaryOrDefaultAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability;
 
-    TPrimaryCapability GetRequiredPrimaryAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability<TSubject>;
+    TPrimaryCapability GetRequiredPrimaryAs<TPrimaryCapability>() where TPrimaryCapability : class, IPrimaryCapability;
 
-    IReadOnlyList<TCapability> GetAll<TCapability>() where TCapability : class, ICapability<TSubject>;
+    IReadOnlyList<TCapability> GetAll<TCapability>() where TCapability : class;
 
-    IReadOnlyList<ICapability<TSubject>> GetAll();
+    IReadOnlyList<object> GetAll();
 
-    bool Has<TCapability>() where TCapability : class, ICapability<TSubject>;
+    bool Has<TCapability>() where TCapability : class;
 
-    int Count<TCapability>() where TCapability : class, ICapability<TSubject>;
+    int Count<TCapability>() where TCapability : class;
 }
