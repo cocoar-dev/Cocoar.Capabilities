@@ -1,12 +1,12 @@
 namespace Cocoar.Capabilities;
 
-internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubject : notnull
+internal sealed class Composition : IComposition
 {
     private IReadOnlyDictionary<Type, Array> _capabilitiesByType;
     private int _totalCapabilityCount;
 
     internal Composition(
-        TSubject subject,
+        object subject,
         IReadOnlyDictionary<Type, Array> capabilitiesByType,
         int totalCapabilityCount)
     {
@@ -15,26 +15,24 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
         _totalCapabilityCount = totalCapabilityCount;
     }
 
-    public TSubject Subject { get; }
-
-    object IComposition.Subject => Subject!;
+    public object Subject { get; }
 
     public int TotalCapabilityCount => _totalCapabilityCount;
 
     public bool HasPrimary()
     {
-        return Has<IPrimaryCapability<TSubject>>();
+        return Has<IPrimaryCapability>();
     }
 
     public bool HasPrimary<TPrimaryCapability>()
-        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
+        where TPrimaryCapability : class, IPrimaryCapability
     {
         return Has<TPrimaryCapability>();
     }
 
-    public bool TryGetPrimary(out IPrimaryCapability<TSubject> primary)
+    public bool TryGetPrimary(out IPrimaryCapability primary)
     {
-        var primaryCapabilities = GetAll<IPrimaryCapability<TSubject>>();
+        var primaryCapabilities = GetAll<IPrimaryCapability>();
         if (primaryCapabilities.Count > 0)
         {
             primary = primaryCapabilities[0];
@@ -44,13 +42,13 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
         return false;
     }
 
-    public IPrimaryCapability<TSubject>? GetPrimaryOrDefault()
+    public IPrimaryCapability? GetPrimaryOrDefault()
     {
         TryGetPrimary(out var primary);
         return primary;
     }
 
-    public IPrimaryCapability<TSubject> GetPrimary()
+    public IPrimaryCapability GetPrimary()
     {
         if (TryGetPrimary(out var primary))
         {
@@ -60,7 +58,7 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
     }
 
     public bool TryGetPrimaryAs<TPrimaryCapability>(out TPrimaryCapability primary)
-        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
+        where TPrimaryCapability : class, IPrimaryCapability
     {
         if (TryGetPrimary(out var basePrimary) && basePrimary is TPrimaryCapability typed)
         {
@@ -72,25 +70,25 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
     }
 
     public TPrimaryCapability? GetPrimaryOrDefaultAs<TPrimaryCapability>()
-        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
+        where TPrimaryCapability : class, IPrimaryCapability
     {
         TryGetPrimaryAs<TPrimaryCapability>(out var primary);
         return primary;
     }
 
     public TPrimaryCapability GetRequiredPrimaryAs<TPrimaryCapability>()
-        where TPrimaryCapability : class, IPrimaryCapability<TSubject>
+        where TPrimaryCapability : class, IPrimaryCapability
     {
         if (TryGetPrimaryAs<TPrimaryCapability>(out var primary))
         {
             return primary;
         }
         throw new InvalidOperationException(
-            $"Primary capability of type '{typeof(TPrimaryCapability).Name}' not found for subject '{typeof(TSubject).Name}'.");
+            $"Primary capability of type '{typeof(TPrimaryCapability).Name}' not found.");
     }
 
     public IReadOnlyList<TCapability> GetAll<TCapability>() 
-        where TCapability : class, ICapability<TSubject>
+        where TCapability : class
     {
         var queryType = typeof(TCapability);
         if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
@@ -107,43 +105,31 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
         return typed;
     }
 
-    public IReadOnlyList<ICapability<TSubject>> GetAll()
+    public IReadOnlyList<object> GetAll()
     {
         if (_capabilitiesByType.Count == 0)
-            return Array.Empty<ICapability<TSubject>>();
+            return Array.Empty<object>();
 
-        var list = new List<ICapability<TSubject>>(_totalCapabilityCount);
+        var list = new List<object>(_totalCapabilityCount);
         foreach (var array in _capabilitiesByType.Values)
         {
             for (int i = 0; i < array.Length; i++)
             {
-                list.Add((ICapability<TSubject>)array.GetValue(i)!);
+                list.Add(array.GetValue(i)!);
             }
         }
 
-        if (list.Count > 1)
-        {
-            // Stable global ordering across different type buckets.
-            bool hasOrdered = false;
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i] is IOrderedCapability)
-                {
-                    hasOrdered = true; break;
-                }
-            }
-            if (hasOrdered)
-            {
-                // Use stable sort (CapabilityOrdering) via a temp typed list.
-                CapabilityOrdering.SortInPlace(list);
-            }
-        }
-
-        return list.Count == 0 ? Array.Empty<ICapability<TSubject>>() : list.ToArray();
+        // NOTE: Arrays are already sorted by order during Build().
+        // However, when we combine capabilities from different type buckets,
+        // we need to maintain stable ordering across the entire list.
+        // Since we don't have order information here, we'll return them
+        // in the order they were stored (by type bucket).
+        
+        return list.AsReadOnly();
     }
 
     public bool Has<TCapability>() 
-        where TCapability : class, ICapability<TSubject>
+        where TCapability : class
     {
         var queryType = typeof(TCapability);
         if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0) return false;
@@ -152,7 +138,7 @@ internal sealed class Composition<TSubject> : IComposition<TSubject> where TSubj
     }
 
     public int Count<TCapability>() 
-        where TCapability : class, ICapability<TSubject>
+        where TCapability : class
     {
         var queryType = typeof(TCapability);
         if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0) return 0;

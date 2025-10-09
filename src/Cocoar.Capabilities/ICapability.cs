@@ -1,12 +1,7 @@
 namespace Cocoar.Capabilities;
 
-public interface ICapability { }
-
-public interface ICapability<in TSubject> : ICapability { }
-
-public interface IPrimaryCapability<in T> : ICapability<T> { }
-
-public interface IOrderedCapability
-{
-    int Order { get; }
-}
+/// <summary>
+/// Marker interface indicating a capability that should be the primary capability for an instance.
+/// Only one primary capability is allowed per instance.
+/// </summary>
+public interface IPrimaryCapability { }

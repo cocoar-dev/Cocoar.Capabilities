@@ -20,19 +20,9 @@ internal static class TupleTypeExtractor
         return [tupleType];
     }
     
-    public static void ValidateCapabilityTypes<TSubject>(Type[] types)
+    public static void ValidateCapabilityTypes(Type[] types)
     {
-        var capabilityInterface = typeof(ICapability<TSubject>);
-        
-        foreach (var type in types)
-        {
-            if (!capabilityInterface.IsAssignableFrom(type))
-            {
-                throw new ArgumentException(
-                    $"Type '{type.Name}' must implement ICapability<{typeof(TSubject).Name}> " +
-                    $"to be registered as a capability contract.");
-            }
-        }
+        // No validation needed - any type can be a capability
     }
     
     private static bool IsValueTupleType(Type type)

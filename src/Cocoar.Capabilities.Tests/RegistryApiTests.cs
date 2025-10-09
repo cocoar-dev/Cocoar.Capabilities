@@ -3,7 +3,7 @@ namespace Cocoar.Capabilities.Tests;
 public class RegistryApiTests
 {
     private sealed record Subject(int Id);
-    private sealed record Cap(string Name) : ICapability<Subject>;
+    private sealed record Cap(string Name) ;
 
     [Fact]
     public void CompositionRegistry_FindRequired_ThrowsWhenMissing()

@@ -10,7 +10,7 @@ public class ValueTypeRegistryTests
         UseCompositionRegistry = true
     });
 
-    private record IntTestCapability(string Name) : ICapability<int>;
+    private record IntTestCapability(string Name) ;
 
     [Fact]
     public void ValueType_Compositions_AreRetrievable()

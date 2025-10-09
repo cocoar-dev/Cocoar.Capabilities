@@ -4,7 +4,7 @@ namespace Cocoar.Capabilities.Tests;
 
 public class StringSubjectValueSemanticsTests
 {
-    private record StringCapability(string Label) : ICapability<string>;
+    private record StringCapability(string Label) ;
     [Fact]
     public void DistinctEqualStringInstances_MapToSameComposition_WhenRegistered()
     {

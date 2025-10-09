@@ -7,8 +7,8 @@ namespace Cocoar.Capabilities.Benchmarks;
 public class CanonicalizationBenchmarks : IDisposable
 {
     public record struct ValueSubject(int Id);
-    public record StringCapability(string Name) : ICapability<string>;
-    public record ValueCapability(string Name) : ICapability<ValueSubject>;
+    public record StringCapability(string Name) ;
+    public record ValueCapability(string Name) ;
 
     private CapabilityScope _stringScope = null!;
     private CapabilityScope _valueScope = null!;

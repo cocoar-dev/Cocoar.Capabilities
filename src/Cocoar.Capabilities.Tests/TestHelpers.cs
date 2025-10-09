@@ -17,44 +17,44 @@ public record struct IntSubject(int Value);
 public record struct GuidSubject(Guid Id);
 public record struct ComplexStruct(int Id, string Name, DateTime Created);
 
-public record TestCapability(string Name) : ICapability<StringSubject>;
-public record DocumentCapability(string Type, string Content) : ICapability<DocumentSubject>;
-public record IntCapability(int Value) : ICapability<IntSubject>;
-public record GuidCapability(string Description) : ICapability<GuidSubject>;
-public record StructCapability(string Data) : ICapability<ComplexStruct>;
+public record TestCapability(string Name);
+public record DocumentCapability(string Type, string Content);
+public record IntCapability(int Value);
+public record GuidCapability(string Description);
+public record StructCapability(string Data);
 
-public record PrimaryTestCapability(string Name) : IPrimaryCapability<StringSubject>;
-public record DocumentPrimaryCapability(string Title) : IPrimaryCapability<DocumentSubject>;
-public record IntPrimaryCapability(string Description) : IPrimaryCapability<IntSubject>;
-public record AlternatePrimaryCapability(string Value) : IPrimaryCapability<StringSubject>;
+public record PrimaryTestCapability(string Name) : IPrimaryCapability;
+public record DocumentPrimaryCapability(string Title) : IPrimaryCapability;
+public record IntPrimaryCapability(string Description) : IPrimaryCapability;
+public record AlternatePrimaryCapability(string Value) : IPrimaryCapability;
 
-public record TestPrimaryCapability(string Id, string Description) : IPrimaryCapability<StringSubject>;
+public record TestPrimaryCapability(string Id, string Description) : IPrimaryCapability;
 
-public record OrderedCapability(int Order, string Name) : ICapability<StringSubject>, IOrderedCapability;
-public record HighPriorityCapability(string Name) : ICapability<StringSubject>, IOrderedCapability
+public record OrderedCapability(int Order, string Name);
+public record HighPriorityCapability(string Name)
 {
     public int Order => -100;
 }
-public record LowPriorityCapability(string Name) : ICapability<StringSubject>, IOrderedCapability  
+public record LowPriorityCapability(string Name)
 {
     public int Order => 100;
 }
 
-public record OrderedTestCapability(string Name, int Order) : ICapability<StringSubject>, IOrderedCapability;
-public record OrderedPrimaryTestCapability(string Id, string Description, int Order) : IPrimaryCapability<StringSubject>, IOrderedCapability;
+public record OrderedTestCapability(string Name, int Order);
+public record OrderedPrimaryTestCapability(string Id, string Description, int Order) : IPrimaryCapability;
 
-public interface IValidationCapability : ICapability<StringSubject>
+public interface IValidationCapability 
 {
     bool IsValid { get; }
 }
 
-public interface ILoggingCapability : ICapability<StringSubject>  
+public interface ILoggingCapability   
 {
     void Log(string message);
 }
 
-public interface ITestContract : ICapability<StringSubject> { }
-public interface IAlternateContract : ICapability<StringSubject> { }
+public interface ITestContract  { }
+public interface IAlternateContract  { }
 
 public record ValidationCapability(bool IsValid, string Rule) : IValidationCapability;
 public record LoggingCapability(string LoggerName) : ILoggingCapability
@@ -65,10 +65,10 @@ public record LoggingCapability(string LoggerName) : ILoggingCapability
 public record TestContractImplementation(string Name, string Description) : ITestContract;
 public record AlternateContractImplementation(string Name, int Value) : IAlternateContract;
 public record MultiContractImplementation(string Name, string Description, int Value) : ITestContract, IAlternateContract;
-public record TestContractPrimaryCapability(string Id, string Description) : IPrimaryCapability<StringSubject>, ITestContract;
+public record TestContractPrimaryCapability(string Id, string Description) : IPrimaryCapability, ITestContract;
 
-public record CompositeCapability(string Name, ICapability<StringSubject> Inner) : ICapability<StringSubject>;
-public record ConditionalCapability(string Name, bool Condition) : ICapability<StringSubject>;
+public record CompositeCapability(string Name, object Inner);
+public record ConditionalCapability(string Name, bool Condition);
 
 public static class TestOptions
 {

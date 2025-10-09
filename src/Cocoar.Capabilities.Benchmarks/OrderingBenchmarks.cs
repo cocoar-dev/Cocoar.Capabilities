@@ -18,7 +18,12 @@ public class OrderingBenchmarks : IDisposable
 {
     public record Subject(int Id, string Name);
 
-    public interface ITestCap : ICapability<Subject> { }
+    public interface ITestCap  { }
+    
+    public interface IOrderedCapability
+    {
+        int Order { get; }
+    }
 
     public sealed record PlainCap(string Name) : ITestCap; // Unordered
 
@@ -31,8 +36,8 @@ public class OrderingBenchmarks : IDisposable
     private CapabilityScope _scope = null!;
 
     // Cached compositions for recomposition measurements
-    private IComposition<Subject> _unorderedBase = null!;
-    private IComposition<Subject> _orderedRandomBase = null!;
+    private IComposition _unorderedBase = null!;
+    private IComposition _orderedRandomBase = null!;
 
     [Params(50, 200, 500)]
     public int Count { get; set; }
@@ -61,13 +66,13 @@ public class OrderingBenchmarks : IDisposable
     #region Build (Fresh)
 
     [Benchmark(Description = "Build: Unordered")] 
-    public IComposition<Subject> Build_Unordered() => BuildUnorderedInternal();
+    public IComposition Build_Unordered() => BuildUnorderedInternal();
 
     [Benchmark(Description = "Build: Ordered (Random)")] 
-    public IComposition<Subject> Build_Ordered_Random() => BuildOrderedRandomInternal();
+    public IComposition Build_Ordered_Random() => BuildOrderedRandomInternal();
 
     [Benchmark(Description = "Build: Ordered (Already Sorted)")] 
-    public IComposition<Subject> Build_Ordered_AlreadySorted()
+    public IComposition Build_Ordered_AlreadySorted()
     {
         var composer = _scope.For(new Subject(2, "Sorted"));
         for (int i = 0; i < Count; i++)
@@ -78,7 +83,7 @@ public class OrderingBenchmarks : IDisposable
     }
 
     [Benchmark(Description = "Build: Ordered (Reverse -> Worst Case)")] 
-    public IComposition<Subject> Build_Ordered_Reverse()
+    public IComposition Build_Ordered_Reverse()
     {
         var composer = _scope.For(new Subject(3, "Reverse"));
         for (int i = 0; i < Count; i++)
@@ -89,7 +94,7 @@ public class OrderingBenchmarks : IDisposable
     }
 
     [Benchmark(Description = "Build: Ordered (Duplicate Priorities)")] 
-    public IComposition<Subject> Build_Ordered_Duplicates()
+    public IComposition Build_Ordered_Duplicates()
     {
         var composer = _scope.For(new Subject(4, "Duplicates"));
         for (int i = 0; i < Count; i++)
@@ -104,21 +109,21 @@ public class OrderingBenchmarks : IDisposable
     #region Recompose (In-place Update)
 
     [Benchmark(Description = "Recompose: Unordered (No Change)")] 
-    public IComposition<Subject> Recompose_Unordered_NoChange()
+    public IComposition Recompose_Unordered_NoChange()
     {
         var composer = _scope.Recompose(_unorderedBase);
         return composer.Build(); // identity preserved
     }
 
     [Benchmark(Description = "Recompose: Ordered Random (No Change)")] 
-    public IComposition<Subject> Recompose_Ordered_NoChange()
+    public IComposition Recompose_Ordered_NoChange()
     {
         var composer = _scope.Recompose(_orderedRandomBase);
         return composer.Build();
     }
 
     [Benchmark(Description = "Recompose: Ordered Add One")] 
-    public IComposition<Subject> Recompose_Ordered_Add()
+    public IComposition Recompose_Ordered_Add()
     {
         var composer = _scope.Recompose(_orderedRandomBase);
         composer.Add(new OrderedCap("NewLast", Count + 10));
@@ -129,8 +134,8 @@ public class OrderingBenchmarks : IDisposable
 
     #region Enumeration (GetAll)
 
-    private IComposition<Subject> _enumerationOrdered = null!;
-    private IComposition<Subject> _enumerationUnordered = null!;
+    private IComposition _enumerationOrdered = null!;
+    private IComposition _enumerationUnordered = null!;
 
     [IterationSetup(Targets = new[]{ nameof(Enumerate_All_Ordered), nameof(Enumerate_All_Unordered) })]
     public void IterationSetupEnumeration()
@@ -144,10 +149,10 @@ public class OrderingBenchmarks : IDisposable
     public int Enumerate_All_Unordered()
     {
         int sum = 0;
-        foreach (var c in _enumerationUnordered.GetAll())
+        foreach (var c in _enumerationUnordered.GetAll<ITestCap>())
         {
             // cheap side-effect to prevent elimination
-            var obj = Unsafe.As<ICapability<Subject>, object?>(ref Unsafe.AsRef(in c));
+            var obj = Unsafe.As<ITestCap, object?>(ref Unsafe.AsRef(in c));
             if (obj != null) sum += obj.GetHashCode();
         }
         return sum;
@@ -157,9 +162,9 @@ public class OrderingBenchmarks : IDisposable
     public int Enumerate_All_Ordered()
     {
         int sum = 0;
-        foreach (var c in _enumerationOrdered.GetAll())
+        foreach (var c in _enumerationOrdered.GetAll<ITestCap>())
         {
-            var obj = Unsafe.As<ICapability<Subject>, object?>(ref Unsafe.AsRef(in c));
+            var obj = Unsafe.As<ITestCap, object?>(ref Unsafe.AsRef(in c));
             if (obj != null) sum += obj.GetHashCode();
         }
         return sum;
@@ -167,14 +172,14 @@ public class OrderingBenchmarks : IDisposable
 
     #endregion
 
-    private IComposition<Subject> BuildUnorderedInternal()
+    private IComposition BuildUnorderedInternal()
     {
         var composer = _scope.For(new Subject(10, "Unordered"));
         for (int i = 0; i < Count; i++) composer.Add(new PlainCap($"C{i}"));
         return composer.Build();
     }
 
-    private IComposition<Subject> BuildOrderedRandomInternal()
+    private IComposition BuildOrderedRandomInternal()
     {
         var composer = _scope.For(new Subject(11, "OrderedRandom"));
         for (int i = 0; i < Count; i++) composer.Add(new OrderedCap($"C{i}", _randomOrder[i]));

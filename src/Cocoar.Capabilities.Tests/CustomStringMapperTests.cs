@@ -50,5 +50,5 @@ public sealed class CustomStringMapperTests
         Assert.NotNull(found);
         Assert.Same(composer, found);
     }
-    private sealed class SimpleCapability : ICapability<string> { }
+    private sealed class SimpleCapability  { }
 }

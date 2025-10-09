@@ -6,12 +6,12 @@ public class OrderingTests
 {
     private sealed record Subject(int Id);
 
-    private sealed record OrderedCap(int Id, int Priority) : ICapability<Subject>, IOrderedCapability
+    private sealed record OrderedCap(int Id, int Priority)
     {
         public int Order => Priority;
     }
 
-    private sealed record PlainCap(int Id) : ICapability<Subject>;
+    private sealed record PlainCap(int Id);
 
     private static readonly int[] ExpectedSorted = {10,20,30,40,50};
     private static readonly int[] ExpectedStability = {1,2,3,4,5};
@@ -25,11 +25,11 @@ public class OrderingTests
         var composer = scope.For(subj);
 
         // Intentionally add in unsorted order
-        composer.Add(new OrderedCap(1, 50));
-        composer.Add(new OrderedCap(2, 10));
-        composer.Add(new OrderedCap(3, 30));
-        composer.Add(new OrderedCap(4, 40));
-        composer.Add(new OrderedCap(5, 20));
+        composer.Add(new OrderedCap(1, 50), order: 50);
+        composer.Add(new OrderedCap(2, 10), order: 10);
+        composer.Add(new OrderedCap(3, 30), order: 30);
+        composer.Add(new OrderedCap(4, 40), order: 40);
+        composer.Add(new OrderedCap(5, 20), order: 20);
 
         var comp = composer.Build();
         var ordered = comp.GetAll<OrderedCap>();
@@ -46,11 +46,11 @@ public class OrderingTests
         var composer = scope.For(subj);
 
         // All same priority => resulting order must match insertion order
-        composer.Add(new OrderedCap(1, 5));
-        composer.Add(new OrderedCap(2, 5));
-        composer.Add(new OrderedCap(3, 5));
-        composer.Add(new OrderedCap(4, 5));
-        composer.Add(new OrderedCap(5, 5));
+        composer.Add(new OrderedCap(1, 5), order: 5);
+        composer.Add(new OrderedCap(2, 5), order: 5);
+        composer.Add(new OrderedCap(3, 5), order: 5);
+        composer.Add(new OrderedCap(4, 5), order: 5);
+        composer.Add(new OrderedCap(5, 5), order: 5);
 
         var comp = composer.Build();
         var ordered = comp.GetAll<OrderedCap>();
@@ -86,12 +86,12 @@ public class OrderingTests
         var composer = scope.For(subj);
 
         // Plain (order defaults to 0)
-        composer.Add(new PlainCap(1));          // P1
+        composer.Add(new PlainCap(1));           // P1
         // Ordered with higher priority numbers placed after plain (0) when positive
-        composer.Add(new OrderedCap(101, 10));  // O1 (10)
-        composer.Add(new PlainCap(2));          // P2
-        composer.Add(new OrderedCap(102, 5));   // O2 (5)
-        composer.Add(new PlainCap(3));          // P3
+        composer.Add(new OrderedCap(101, 10), order: 10);  // O1 (10)
+        composer.Add(new PlainCap(2));           // P2
+        composer.Add(new OrderedCap(102, 5), order: 5);    // O2 (5)
+        composer.Add(new PlainCap(3));           // P3
 
         var comp = composer.Build();
         var all = comp.GetAll(); // triggers global ordering path

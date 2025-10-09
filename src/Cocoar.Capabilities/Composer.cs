@@ -1,15 +1,15 @@
 namespace Cocoar.Capabilities;
 
-public sealed class Composer<TSubject> where TSubject : notnull
+public sealed class Composer
 {
-    private readonly TSubject _subject;
+    private readonly object _subject;
     private readonly CapabilityScopeOptions _options;
     private readonly DefaultCapabilityRegistry _registry;
     private readonly bool _useComposerRegistry;
-    private readonly CapabilityStore<TSubject> _store = new();
+    private readonly CapabilityStore _store = new();
     private bool _built;
 
-    internal Composer(TSubject subject, CapabilityScopeOptions options, DefaultCapabilityRegistry registry, bool? useRegistry = null)
+    internal Composer(object subject, CapabilityScopeOptions options, DefaultCapabilityRegistry registry, bool? useRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(subject);
         _subject = subject;
@@ -22,7 +22,7 @@ public sealed class Composer<TSubject> where TSubject : notnull
         }
     }
 
-    internal Composer(IComposition<TSubject> existingComposition, CapabilityScopeOptions options, DefaultCapabilityRegistry registry, bool? useRegistry = null)
+    internal Composer(IComposition existingComposition, CapabilityScopeOptions options, DefaultCapabilityRegistry registry, bool? useRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(existingComposition);
         _subject = existingComposition.Subject;
@@ -36,54 +36,77 @@ public sealed class Composer<TSubject> where TSubject : notnull
         }
     }
 
-    public TSubject Subject => _subject;
+    public object Subject => _subject;
 
-    public Composer<TSubject> Add(ICapability<TSubject> capability)
+    public Composer Add(object capability, int? order = null)
     {
         EnsureNotBuilt();
         ArgumentNullException.ThrowIfNull(capability);
 
-        if (capability is IPrimaryCapability<TSubject> && HasPrimary())
+        if (capability is IPrimaryCapability && HasPrimary())
         {
             throw new InvalidOperationException(
-                $"A primary capability is already set for '{typeof(TSubject).Name}'. Use WithPrimary(...) to replace it.");
+                $"A primary capability is already set. Use WithPrimary(...) to replace it.");
         }
-        _store.Add(capability, capability.GetType(), capability is IPrimaryCapability<TSubject>);
+        _store.Add(capability, capability.GetType(), capability is IPrimaryCapability, order);
         return this;
     }
+
+    public Composer Add(object capability, Func<object, int> orderSelector)
+    {
+        ArgumentNullException.ThrowIfNull(orderSelector);
+        var order = orderSelector(capability);
+        return Add(capability, order);
+    }
     
-    public Composer<TSubject> AddAs<TContract>(ICapability<TSubject> capability)
+    public Composer AddAs<TContract>(object capability, int? order = null)
     {
         EnsureNotBuilt();
         ArgumentNullException.ThrowIfNull(capability);
 
         var contractType = typeof(TContract);
         
-        return IsTupleType(contractType) ? AddAsMultipleContracts<TContract>(capability) : AddAsSingleContract<TContract>(capability);
+        return IsTupleType(contractType) ? AddAsMultipleContracts<TContract>(capability, order) : AddAsSingleContract<TContract>(capability, order);
     }
 
-    public Composer<TSubject> TryAdd<TCapability>(TCapability capability) where TCapability : class, ICapability<TSubject>
+    public Composer AddAs<TContract>(object capability, Func<object, int> orderSelector)
+    {
+        ArgumentNullException.ThrowIfNull(orderSelector);
+        var order = orderSelector(capability);
+        return AddAs<TContract>(capability, order);
+    }
+
+    public Composer TryAdd<TCapability>(TCapability capability, int? order = null) where TCapability : class
     {
         ArgumentNullException.ThrowIfNull(capability);
 
-        if (capability is IPrimaryCapability<TSubject> && HasPrimary())
+        if (capability is IPrimaryCapability && HasPrimary())
         {
             return this;
         }
 
         if (!Has<TCapability>())
         {
-            return Add(capability);
+            return Add(capability, order);
         }
         return this;
     }
 
-    public Composer<TSubject> TryAddAs<TContract>(ICapability<TSubject> capability) where TContract : class, ICapability<TSubject>
+    public Composer TryAdd<TCapability>(TCapability capability, Func<object, int> orderSelector) where TCapability : class
+    {
+        ArgumentNullException.ThrowIfNull(capability);
+        ArgumentNullException.ThrowIfNull(orderSelector);
+
+        var order = orderSelector(capability);
+        return TryAdd(capability, order);
+    }
+
+    public Composer TryAddAs<TContract>(object capability, int? order = null) where TContract : class
     {
         ArgumentNullException.ThrowIfNull(capability);
 
         var contractType = typeof(TContract);
-        var isPrimaryContract = contractType.IsGenericType && contractType.GetGenericTypeDefinition() == typeof(IPrimaryCapability<>);
+        var isPrimaryContract = typeof(IPrimaryCapability).IsAssignableFrom(contractType);
         if (isPrimaryContract && HasPrimary())
         {
             return this;
@@ -92,10 +115,10 @@ public sealed class Composer<TSubject> where TSubject : notnull
         if (IsTupleType(contractType))
         {
             var tupleTypes = TupleTypeExtractor.GetTupleTypes<TContract>();
-                for (int i = 0; i < tupleTypes.Length; i++)
+            for (int i = 0; i < tupleTypes.Length; i++)
             {
                 var ct = tupleTypes[i];
-                if (ct.IsGenericType && ct.GetGenericTypeDefinition() == typeof(IPrimaryCapability<>))
+                if (typeof(IPrimaryCapability).IsAssignableFrom(ct))
                 {
                     if (HasPrimary())
                     {
@@ -108,12 +131,21 @@ public sealed class Composer<TSubject> where TSubject : notnull
 
         if (!Has<TContract>())
         {
-            return AddAs<TContract>(capability);
+            return AddAs<TContract>(capability, order);
         }
         return this;
     }
 
-    public Composer<TSubject> RemoveWhere(Func<ICapability<TSubject>, bool> predicate)
+    public Composer TryAddAs<TContract>(object capability, Func<object, int> orderSelector) where TContract : class
+    {
+        ArgumentNullException.ThrowIfNull(capability);
+        ArgumentNullException.ThrowIfNull(orderSelector);
+
+        var order = orderSelector(capability);
+        return TryAddAs<TContract>(capability, order);
+    }
+
+    public Composer RemoveWhere(Func<object, bool> predicate)
     {
         EnsureNotBuilt();
         ArgumentNullException.ThrowIfNull(predicate);
@@ -122,7 +154,7 @@ public sealed class Composer<TSubject> where TSubject : notnull
         return this;
     }
 
-    public Composer<TSubject> WithPrimary(IPrimaryCapability<TSubject>? primary)
+    public Composer WithPrimary(IPrimaryCapability? primary)
     {
         EnsureNotBuilt();
 
@@ -133,7 +165,7 @@ public sealed class Composer<TSubject> where TSubject : notnull
 
         if (primary != null)
         {
-            _store.Add(primary, primary.GetType(), isPrimary: true);
+            _store.Add(primary, primary.GetType(), isPrimary: true, order: null);
         }
 
         return this;
@@ -144,18 +176,18 @@ public sealed class Composer<TSubject> where TSubject : notnull
         return _store.HasPrimary();
     }
 
-    public bool Has<TCapability>() where TCapability : class, ICapability<TSubject>
+    public bool Has<TCapability>() where TCapability : class
     {
         return _store.Has<TCapability>();
     }
 
-    public IComposition<TSubject> Build(bool? useRegistry = null)
+    public IComposition Build(bool? useRegistry = null)
     {
         if (_built) throw new InvalidOperationException("Build() can only be called once. This builder is no longer usable.");
         _built = true;
         var bag = BuildCompositionSnapshot();
 
-    var shouldUseCompositionRegistry = useRegistry ?? _options.UseCompositionRegistry;
+        var shouldUseCompositionRegistry = useRegistry ?? _options.UseCompositionRegistry;
 
         if (!_useComposerRegistry && !shouldUseCompositionRegistry)
         {
@@ -180,72 +212,88 @@ public sealed class Composer<TSubject> where TSubject : notnull
         return bag;
     }
 
-    private IComposition<TSubject> RecomposeExisting(IComposition<TSubject> existingComposition)
+    private IComposition RecomposeExisting(IComposition existingComposition)
     {
         
-        if (existingComposition is not Composition<TSubject> internalComposition)
+        if (existingComposition is not Composition internalComposition)
         {
             throw new ArgumentException("Recompose only supports compositions created by this system", nameof(existingComposition));
         }
 
         var (result, totalCount) = _store.BuildCapabilityArrays();
-        if (result.TryGetValue(CapabilityStore<TSubject>.PrimaryMarkerType, out var primaryArr) && primaryArr.Length > 1)
+        if (result.TryGetValue(CapabilityStore.PrimaryMarkerType, out var primaryArr) && primaryArr.Length > 1)
         {
             throw new InvalidOperationException(
-                $"Multiple primary capabilities registered for '{typeof(TSubject).Name}'. Only one primary capability is allowed.");
+                $"Multiple primary capabilities registered. Only one primary capability is allowed.");
         }
-    internalComposition.UpdateCapabilities(result, totalCount);
+        internalComposition.UpdateCapabilities(result, totalCount);
         
-    return existingComposition;
+        return existingComposition;
     }
 
-    private Composer<TSubject> AddAsSingleContract<TContract>(ICapability<TSubject> capability)
+    private Composer AddAsSingleContract<TContract>(object capability, int? order)
     {
         var contractType = typeof(TContract);
         
-        if (!typeof(ICapability<TSubject>).IsAssignableFrom(contractType))
-        {
-            throw new ArgumentException($"Type '{contractType.Name}' must implement ICapability<{typeof(TSubject).Name}> to be registered as a capability contract.");
-        }
-        var isPrimaryContract = contractType.IsGenericType && contractType.GetGenericTypeDefinition() == typeof(IPrimaryCapability<>);
+        var isPrimaryContract = typeof(IPrimaryCapability).IsAssignableFrom(contractType);
 
         if (isPrimaryContract && HasPrimary())
         {
             throw new InvalidOperationException(
-                $"A primary capability is already set for '{typeof(TSubject).Name}'. Use WithPrimary(...) to replace it.");
+                $"A primary capability is already set. Use WithPrimary(...) to replace it.");
         }
-    _store.Add(capability, contractType, isPrimaryContract);
+        _store.Add(capability, contractType, isPrimaryContract, order);
 
         return this;        
     }
 
-    private Composer<TSubject> AddAsMultipleContracts<TContract>(ICapability<TSubject> capability)
+    private Composer AddAsMultipleContracts<TContract>(object capability, int? order)
     {
         var contractTypes = TupleTypeExtractor.GetTupleTypes<TContract>();
         
-        TupleTypeExtractor.ValidateCapabilityTypes<TSubject>(contractTypes);
-        int primaryCountInTuple = 0;
+        TupleTypeExtractor.ValidateCapabilityTypes(contractTypes);
+        
+        // Check if any contract type is or implements IPrimaryCapability
+        // We need to deduplicate - if PrimaryA implements IPrimaryCapability,
+        // and the tuple contains (IPrimaryCapability, PrimaryA), we should only count it once
+        bool hasPrimaryContract = false;
+        int markerInterfaceCount = 0;
+        var distinctPrimaryTypes = new HashSet<Type>();
+        
         foreach (var ct in contractTypes)
         {
-            if (ct.IsGenericType && ct.GetGenericTypeDefinition() == typeof(IPrimaryCapability<>))
+            if (typeof(IPrimaryCapability).IsAssignableFrom(ct))
             {
-                primaryCountInTuple++;
+                hasPrimaryContract = true;
+                // Count how many times the marker interface itself appears
+                if (ct == typeof(IPrimaryCapability))
+                {
+                    markerInterfaceCount++;
+                }
+                else
+                {
+                    // It's a concrete type implementing IPrimaryCapability
+                    distinctPrimaryTypes.Add(ct);
+                }
             }
         }
 
-        if (primaryCountInTuple > 1)
+        // Multiple errors to catch:
+        // 1. IPrimaryCapability marker appears more than once
+        // 2. Multiple distinct types that implement IPrimaryCapability
+        if (markerInterfaceCount > 1 || distinctPrimaryTypes.Count > 1)
         {
             throw new InvalidOperationException(
-                $"Multiple primary capability contracts specified in the same tuple for '{typeof(TSubject).Name}'. Only one primary capability is allowed.");
+                $"Multiple primary capability contracts specified in the same tuple. Only one primary capability is allowed.");
         }
 
-        if (primaryCountInTuple == 1 && HasPrimary())
+        if (hasPrimaryContract && HasPrimary())
         {
             throw new InvalidOperationException(
-                $"A primary capability is already set for '{typeof(TSubject).Name}'. Use WithPrimary(...) to replace it.");
+                $"A primary capability is already set. Use WithPrimary(...) to replace it.");
         }
 
-        _store.Add(capability, contractTypes, primaryCountInTuple == 1);
+        _store.Add(capability, contractTypes, hasPrimaryContract, order);
         return this;        
     }
 
@@ -258,14 +306,14 @@ public sealed class Composer<TSubject> where TSubject : notnull
     }
 
 
-    private Composition<TSubject> BuildCompositionSnapshot()
+    private Composition BuildCompositionSnapshot()
     {
         var (result, totalCount) = _store.BuildCapabilityArrays();
-        if (result.TryGetValue(CapabilityStore<TSubject>.PrimaryMarkerType, out var primaryArr) && primaryArr.Length > 1)
+        if (result.TryGetValue(CapabilityStore.PrimaryMarkerType, out var primaryArr) && primaryArr.Length > 1)
         {
             throw new InvalidOperationException(
-                $"Multiple primary capabilities registered for '{typeof(TSubject).Name}'. Only one primary capability is allowed.");
+                $"Multiple primary capabilities registered. Only one primary capability is allowed.");
         }
-    return new Composition<TSubject>(_subject, result, totalCount);
+        return new Composition(_subject, result, totalCount);
     }
 }

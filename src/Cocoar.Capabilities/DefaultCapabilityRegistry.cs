@@ -15,13 +15,13 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
         _canonicalizer = canonicalizer ?? new SubjectKeyCanonicalizer(null);
     }
 
-    public void RegisterComposer<TSubject>(Composer<TSubject> composer) where TSubject : notnull
+    public void RegisterComposer(Composer composer)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(composer);
         var key = Canonicalize(composer.Subject!, out var valueLike);
         var newEntry = CapabilityEntry.FromComposer(composer);
-        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposition<TSubject>(out var comp))
+        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposition(out var comp))
         {
             newEntry = CapabilityEntry.FromBoth(composer, comp);
         }
@@ -29,12 +29,12 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
     }
 
 
-    public void RemoveComposer<TSubject>(TSubject subject) where TSubject : notnull
+    public void RemoveComposer(object subject)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(subject);
         var key = Canonicalize(subject!, out var valueLike);
-        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposition<TSubject>(out var comp))
+        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposition(out var comp))
         {
             StoreEntry(key, valueLike, CapabilityEntry.FromComposition(comp));
         }
@@ -44,7 +44,7 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
         }
     }
 
-    public bool TryGetComposer<TSubject>(TSubject subject, out Composer<TSubject> composer) where TSubject : notnull
+    public bool TryGetComposer(object subject, out Composer composer)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(subject);
@@ -57,20 +57,20 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
         return false;
     }
 
-    public void RegisterComposition<TSubject>(IComposition<TSubject> composition) where TSubject : notnull
+    public void RegisterComposition(IComposition composition)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(composition);
         var key = Canonicalize(composition.Subject!, out var valueLike);
         var newEntry = CapabilityEntry.FromComposition(composition);
-        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposer(out Composer<TSubject> existingComposer))
+        if (TryGetEntry(key, valueLike, out var existing) && existing.TryGetComposer(out Composer existingComposer))
         {
             newEntry = CapabilityEntry.FromBoth(existingComposer, composition);
         }
         StoreEntry(key, valueLike, newEntry);
     }
 
-    public bool TryGetComposition<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull
+    public bool TryGetComposition(object subject, out IComposition composition)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(subject);
@@ -83,7 +83,7 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
         return false;
     }
 
-    public void TransitionToComposition<TSubject>(IComposition<TSubject> composition) where TSubject : notnull
+    public void TransitionToComposition(IComposition composition)
     {
         ThrowIfDisposed();
         
@@ -93,46 +93,11 @@ public sealed class DefaultCapabilityRegistry : ICapabilityRegistry
         StoreEntry(key, valueLike, entry);
     }
 
-    public bool Remove<TSubject>(TSubject subject) where TSubject : notnull
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(subject);
-        var key = Canonicalize(subject!, out var valueLike);
-        return valueLike ? _valueTypeEntries.TryRemove(key, out _) : _refTypeEntries.Remove(key);
-    }
-
-    public bool TryGetComposer(object subject, out object composer)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(subject);
-        var key = Canonicalize(subject, out var valueLike);
-        if (TryGetEntry(key, valueLike, out var entry) && entry.TryGetComposer(out composer))
-        {
-            return true;
-        }
-        composer = default!;
-        return false;
-    }
-
-    public bool TryGetComposition(object subject, out IComposition composition)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(subject);
-        var key = Canonicalize(subject, out var valueLike);
-        if (TryGetEntry(key, valueLike, out var entry) && entry.TryGetComposition(out object compositionObj))
-        {
-            composition = (IComposition)compositionObj;
-            return true;
-        }
-        composition = default!;
-        return false;
-    }
-
     public bool Remove(object subject)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(subject);
-        var key = Canonicalize(subject, out var valueLike);
+        var key = Canonicalize(subject!, out var valueLike);
         return valueLike ? _valueTypeEntries.TryRemove(key, out _) : _refTypeEntries.Remove(key);
     }
 

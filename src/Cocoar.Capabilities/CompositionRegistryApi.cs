@@ -12,17 +12,17 @@ public class CompositionRegistryApi : IDisposable
         _registry = sharedRegistry;
     }
 
-    public bool TryFind<TSubject>(TSubject subject, out IComposition<TSubject> composition) where TSubject : notnull
+    public bool TryFind<TSubject>(TSubject subject, out IComposition composition) where TSubject : notnull
     {
     return _registry.TryGetComposition(subject, out composition);
     }
 
-    public IComposition<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    public IComposition? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
     {
         return TryFind<TSubject>(subject, out var composition) ? composition : null;
     }
 
-    public IComposition<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull
+    public IComposition FindRequired<TSubject>(TSubject subject) where TSubject : notnull
     {
         if (TryFind<TSubject>(subject, out var composition))
             return composition;
@@ -63,7 +63,7 @@ public class CompositionRegistryApi : IDisposable
     }
 
     // Internal method for registering compositions (used by Composer.Build)
-    internal void Register<TSubject>(TSubject subject, IComposition<TSubject> composition, bool forceRegister = false) where TSubject : notnull
+    internal void Register<TSubject>(TSubject subject, IComposition composition, bool forceRegister = false) where TSubject : notnull
     {
         // Only register if scope allows it OR if explicitly forced (method override)
         if (options.UseCompositionRegistry || forceRegister)

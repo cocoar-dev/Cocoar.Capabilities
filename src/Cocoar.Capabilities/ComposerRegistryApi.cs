@@ -12,17 +12,17 @@ public class ComposerRegistryApi : IDisposable
         _registry = sharedRegistry;
     }
 
-    public bool TryFind<TSubject>(TSubject subject, out Composer<TSubject>? composer) where TSubject : notnull
+    public bool TryFind<TSubject>(TSubject subject, out Composer? composer) where TSubject : notnull
     {
     return _registry.TryGetComposer(subject, out composer);
     }
 
-    public Composer<TSubject>? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    public Composer? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
     {
         return TryFind(subject, out var composer) ? composer : null;
     }
 
-    public Composer<TSubject> FindRequired<TSubject>(TSubject subject) where TSubject : notnull
+    public Composer FindRequired<TSubject>(TSubject subject) where TSubject : notnull
     {
         if (TryFind(subject, out var composer) && composer != null)
             return composer;
@@ -30,7 +30,7 @@ public class ComposerRegistryApi : IDisposable
         throw new InvalidOperationException($"No composer found for subject of type '{typeof(TSubject).Name}'.");
     }
 
-    public void Register<TSubject>(TSubject subject, Composer<TSubject> composer, bool forceRegister = false) where TSubject : notnull
+    public void Register<TSubject>(TSubject subject, Composer composer, bool forceRegister = false) where TSubject : notnull
     {
         // Only register if scope allows it OR if explicitly forced (method override)
         if (options.UseComposerRegistry || forceRegister)

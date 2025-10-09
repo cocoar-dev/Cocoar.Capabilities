@@ -5,8 +5,8 @@ namespace Cocoar.Capabilities.Tests;
 public class CapabilityEntryTests
 {
     private sealed record Subject(int Id);
-    private sealed record Cap(string Name) : ICapability<Subject>;
-    private sealed record Primary(string Name) : IPrimaryCapability<Subject>;
+    private sealed record Cap(string Name) ;
+    private sealed record Primary(string Name) : IPrimaryCapability;
 
     [Fact]
     public void Registry_ObjectApis_SucceedForExisting()
@@ -33,7 +33,7 @@ public class CapabilityEntryTests
         Assert.False(scope.Compositions.TryFind(missing, out IComposition? _));
     }
 
-    private sealed class DisposableComposerCap<T> : ICapability<T>, IDisposable where T : notnull
+    private sealed class DisposableComposerCap<T> : IDisposable where T : notnull
     {
         public bool Disposed; public void Dispose() => Disposed = true;
     }
