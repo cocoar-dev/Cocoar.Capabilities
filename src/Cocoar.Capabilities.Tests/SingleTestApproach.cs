@@ -29,7 +29,7 @@ public class SingleTestApproach : IDisposable
             .Build(useRegistry: true);
 
         // Assert: Composition should be findable in registry
-        var foundComposition = _scope.Compositions.FindOrDefault(subject);
+        var foundComposition = _scope.Compositions.GetOrDefault(subject);
         
         // For now, let's just see what happens
         var isFound = foundComposition != null;

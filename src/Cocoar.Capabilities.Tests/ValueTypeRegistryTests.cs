@@ -23,8 +23,8 @@ public class ValueTypeRegistryTests
             .Add(new IntTestCapability("seven"))
             .Build(useRegistry: true);
 
-        Assert.True(scope.Compositions.TryFind(42, out var found1));
-        Assert.True(scope.Compositions.TryFind(7, out var found2));
+        Assert.True(scope.Compositions.TryGet(42, out var found1));
+        Assert.True(scope.Compositions.TryGet(7, out var found2));
         Assert.Same(c1, found1);
         Assert.Same(c2, found2);
     }
@@ -36,8 +36,8 @@ public class ValueTypeRegistryTests
         scope.For(100, useRegistry: true).Add(new IntTestCapability("hundred")).Build(useRegistry: true);
         scope.For(200, useRegistry: true).Add(new IntTestCapability("two")) .Build(useRegistry: true);
         Assert.True(scope.Compositions.Remove(100));
-        Assert.False(scope.Compositions.TryFind(100, out _));
-        Assert.True(scope.Compositions.TryFind(200, out _));
+        Assert.False(scope.Compositions.TryGet(100, out _));
+        Assert.True(scope.Compositions.TryGet(200, out _));
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class ValueTypeRegistryTests
         var comp = scope.For(5, useRegistry: false)
             .Add(new IntTestCapability("five"))
             .Build(useRegistry: false);
-        Assert.False(scope.Compositions.TryFind(5, out _));
+        Assert.False(scope.Compositions.TryGet(5, out _));
         Assert.NotNull(comp);
     }
 }

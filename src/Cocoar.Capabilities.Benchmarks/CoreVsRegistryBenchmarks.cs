@@ -123,19 +123,19 @@ public class CoreVsRegistryBenchmarks
 
     [Benchmark(Description = "Registry: Global FindOrDefault")]
     [BenchmarkCategory("Lookup", "Registry")]
-    public IComposition? Lookup_Registry_FindOrDefault()
+    public IComposition? Lookup_Registry_GetOrDefault()
     {
         // Registry pattern: Global lookup (convenience with overhead)
-        BenchmarkScopes.Shared.Compositions.TryFind(_registrySubject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(_registrySubject, out var composition);
         return composition;
     }
 
-    [Benchmark(Description = "Registry: TryFind pattern")]
+    [Benchmark(Description = "Registry: TryGet pattern")]
     [BenchmarkCategory("Lookup", "Registry")]
-    public bool Lookup_Registry_TryFind()
+    public bool Lookup_Registry_TryGet()
     {
-        // Registry pattern: TryFind (slightly optimized)
-        return BenchmarkScopes.Shared.Compositions.TryFind(_registrySubject, out _);
+        // Registry pattern: TryGet (slightly optimized)
+        return BenchmarkScopes.Shared.Compositions.TryGet(_registrySubject, out _);
     }
 
 

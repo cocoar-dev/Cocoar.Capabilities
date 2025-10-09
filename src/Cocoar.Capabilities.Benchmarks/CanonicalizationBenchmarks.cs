@@ -57,7 +57,7 @@ public class CanonicalizationBenchmarks : IDisposable
         int total = 0;
         for (int i = 0; i < SubjectCount; i++)
         {
-            _stringScope.Compositions.TryFind(_stringSubjects[i], out var comp);
+            _stringScope.Compositions.TryGet(_stringSubjects[i], out var comp);
             if (comp != null) total += comp.TotalCapabilityCount;
         }
         return total;
@@ -69,7 +69,7 @@ public class CanonicalizationBenchmarks : IDisposable
         int total = 0;
         for (int i = 0; i < SubjectCount; i++)
         {
-            _valueScope.Compositions.TryFind(_valueSubjects[i], out var comp);
+            _valueScope.Compositions.TryGet(_valueSubjects[i], out var comp);
             if (comp != null) total += comp.TotalCapabilityCount;
         }
         return total;

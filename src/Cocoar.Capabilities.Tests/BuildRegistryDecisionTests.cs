@@ -13,8 +13,8 @@ public class BuildRegistryDecisionTests
         using var scope = CreateScope(false, false);
         var subject = new StringSubject("s1");
         var comp = scope.For(subject).Add(new TestCapability("A")).Build();
-        Assert.Null(scope.Composers.FindOrDefault(subject));
-        Assert.Null(scope.Compositions.FindOrDefault(subject));
+        Assert.Null(scope.Composers.GetOrDefault(subject));
+        Assert.Null(scope.Compositions.GetOrDefault(subject));
         Assert.Same(subject, comp.Subject);
     }
 
@@ -26,8 +26,8 @@ public class BuildRegistryDecisionTests
         var comp = scope.For(subject, useRegistry: false) // composer override false (explicit)
                         .Add(new TestCapability("B"))
                         .Build(useRegistry: true); // composition override true
-        Assert.Null(scope.Composers.FindOrDefault(subject)); // composer not registered
-        var found = scope.Compositions.FindOrDefault(subject);
+        Assert.Null(scope.Composers.GetOrDefault(subject)); // composer not registered
+        var found = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(found);
         Assert.Same(comp, found);
         Assert.Same(subject, comp.Subject);
@@ -41,8 +41,8 @@ public class BuildRegistryDecisionTests
         var builder = scope.For(subject, useRegistry: true) // composer registered
                            .Add(new TestCapability("C"));
         var comp = builder.Build(useRegistry: false); // disable composition
-        Assert.Null(scope.Compositions.FindOrDefault(subject)); // composition not registered
-        Assert.Null(scope.Composers.FindOrDefault(subject)); // composer removed
+        Assert.Null(scope.Compositions.GetOrDefault(subject)); // composition not registered
+        Assert.Null(scope.Composers.GetOrDefault(subject)); // composer removed
         Assert.Same(subject, comp.Subject);
     }
 
@@ -54,8 +54,8 @@ public class BuildRegistryDecisionTests
         var comp = scope.For(subject) // default true -> composer registered
                         .Add(new TestCapability("D"))
                         .Build(); // default true -> transition
-        Assert.Null(scope.Composers.FindOrDefault(subject)); // composer transitioned away
-        var composition = scope.Compositions.FindOrDefault(subject);
+        Assert.Null(scope.Composers.GetOrDefault(subject)); // composer transitioned away
+        var composition = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(composition);
         Assert.Same(comp, composition);
         Assert.Same(subject, comp.Subject);
@@ -69,8 +69,8 @@ public class BuildRegistryDecisionTests
         var comp = scope.For(subject, useRegistry: false)
                         .Add(new TestCapability("E"))
                         .Build(); // composition default true
-        Assert.Null(scope.Composers.FindOrDefault(subject));
-        var found = scope.Compositions.FindOrDefault(subject);
+        Assert.Null(scope.Composers.GetOrDefault(subject));
+        var found = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(found);
         Assert.Same(comp, found);
         Assert.Same(subject, comp.Subject);
@@ -83,10 +83,10 @@ public class BuildRegistryDecisionTests
         var subject = new StringSubject("s6");
         var composer = scope.For(subject); // composer registered
         composer.Add(new TestCapability("X"));
-        Assert.NotNull(scope.Composers.FindOrDefault(subject)); // pre-build composer present
+        Assert.NotNull(scope.Composers.GetOrDefault(subject)); // pre-build composer present
         var composition = composer.Build(); // composition registry disabled -> no registration
-        Assert.Null(scope.Compositions.FindOrDefault(subject));
-        Assert.Null(scope.Composers.FindOrDefault(subject)); // composer removed
+        Assert.Null(scope.Compositions.GetOrDefault(subject));
+        Assert.Null(scope.Composers.GetOrDefault(subject)); // composer removed
         Assert.Same(subject, composition.Subject);
     }
 
@@ -97,12 +97,12 @@ public class BuildRegistryDecisionTests
         var subject = new StringSubject("s7");
         var composer = scope.For(subject); // composer registered
         composer.Add(new TestCapability("Y"));
-        var composerPre = scope.Composers.FindOrDefault(subject);
+        var composerPre = scope.Composers.GetOrDefault(subject);
         Assert.NotNull(composerPre);
         Assert.Same(composer, composerPre);
         var composition = composer.Build(); // transition
-        Assert.Null(scope.Composers.FindOrDefault(subject));
-        var compositionPost = scope.Compositions.FindOrDefault(subject);
+        Assert.Null(scope.Composers.GetOrDefault(subject));
+        var compositionPost = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(compositionPost);
         Assert.Same(composition, compositionPost);
         Assert.Same(subject, composition.Subject);

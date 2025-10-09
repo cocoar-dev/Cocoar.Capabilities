@@ -246,7 +246,7 @@ Provides access to the composer registry for managing active composers.
 |--------|---------|-------------|
 | `Has(object subject)` | `bool` | Checks if a composer exists for the subject |
 | `Find(object subject)` | `Composer` | Finds the composer for the subject (throws if not found) |
-| `FindOrDefault(object subject)` | `Composer?` | Finds the composer or returns null |
+| `GetOrDefault(object subject)` | `Composer?` | Finds the composer or returns null |
 | `TryGet(object subject, out Composer composer)` | `bool` | Tries to get the composer for the subject |
 
 ### Example
@@ -271,13 +271,13 @@ Provides access to the composition registry for managing built compositions.
 |--------|---------|-------------|
 | `Has(object subject)` | `bool` | Checks if a composition exists for the subject |
 | `Find(object subject)` | `IComposition` | Finds the composition for the subject (throws if not found) |
-| `FindOrDefault(object subject)` | `IComposition?` | Finds the composition or returns null |
-| `TryFind(object subject, out IComposition composition)` | `bool` | Tries to find the composition for the subject |
+| `GetOrDefault(object subject)` | `IComposition?` | Finds the composition or returns null |
+| `TryGet(object subject, out IComposition composition)` | `bool` | Tries to find the composition for the subject |
 
 ### Example
 
 ```csharp
-var composition = scope.Compositions.FindOrDefault(document);
+var composition = scope.Compositions.GetOrDefault(document);
 if (composition != null)
 {
     var capabilities = composition.GetAll<ICapability>();

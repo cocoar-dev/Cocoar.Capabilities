@@ -46,8 +46,8 @@ public class BuildRegistryDecisionMatrixTests
         var composer = scope.For(subject, composerOverride);
         composer.Add(new TestCapability("T"));
 
-        var preComposer = scope.Composers.FindOrDefault(subject);
-        var preComposition = scope.Compositions.FindOrDefault(subject);
+        var preComposer = scope.Composers.GetOrDefault(subject);
+        var preComposition = scope.Compositions.GetOrDefault(subject);
 
         Assert.Equal(effectiveComposer, preComposer != null);
         Assert.Null(preComposition); // Never registered before Build
@@ -55,8 +55,8 @@ public class BuildRegistryDecisionMatrixTests
         // Act: Build
         var composition = composer.Build(compositionOverride);
 
-        var postComposer = scope.Composers.FindOrDefault(subject);
-        var postComposition = scope.Compositions.FindOrDefault(subject);
+        var postComposer = scope.Composers.GetOrDefault(subject);
+        var postComposition = scope.Compositions.GetOrDefault(subject);
 
         // Assert post-build according to matrix
         if (!effectiveComposer && !effectiveComposition)
