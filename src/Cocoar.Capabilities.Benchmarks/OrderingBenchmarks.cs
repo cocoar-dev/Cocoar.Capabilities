@@ -19,6 +19,11 @@ public class OrderingBenchmarks : IDisposable
     public record Subject(int Id, string Name);
 
     public interface ITestCap  { }
+    
+    public interface IOrderedCapability
+    {
+        int Order { get; }
+    }
 
     public sealed record PlainCap(string Name) : ITestCap; // Unordered
 
@@ -144,10 +149,10 @@ public class OrderingBenchmarks : IDisposable
     public int Enumerate_All_Unordered()
     {
         int sum = 0;
-        foreach (var c in _enumerationUnordered.GetAll())
+        foreach (var c in _enumerationUnordered.GetAll<ITestCap>())
         {
             // cheap side-effect to prevent elimination
-            var obj = Unsafe.As<ICapability, object?>(ref Unsafe.AsRef(in c));
+            var obj = Unsafe.As<ITestCap, object?>(ref Unsafe.AsRef(in c));
             if (obj != null) sum += obj.GetHashCode();
         }
         return sum;
@@ -157,9 +162,9 @@ public class OrderingBenchmarks : IDisposable
     public int Enumerate_All_Ordered()
     {
         int sum = 0;
-        foreach (var c in _enumerationOrdered.GetAll())
+        foreach (var c in _enumerationOrdered.GetAll<ITestCap>())
         {
-            var obj = Unsafe.As<ICapability, object?>(ref Unsafe.AsRef(in c));
+            var obj = Unsafe.As<ITestCap, object?>(ref Unsafe.AsRef(in c));
             if (obj != null) sum += obj.GetHashCode();
         }
         return sum;

@@ -7,15 +7,17 @@ namespace Cocoar.Capabilities.Benchmarks;
 [SimpleJob]
 public class CoreVsRegistryBenchmarks
 {
+    public interface ICapability { }
+    
     public record TestSubject(int Id, string Name);
-    public record FeatureCapability(string Name) ;
-    public record ConfigCapability(string Key, string Value) ;
-    public record ValidationCapability(string Rule) ;
-    public record CachingCapability(string CacheKey, TimeSpan Duration) ;
-    public record LoggingCapability(string LoggerName) ;
-    public record SecurityCapability(string Permission, string Role) ;
-    public record MonitoringCapability(string MetricName) ;
-    public record RetryCapability(string Operation, int MaxRetries) ;
+    public record FeatureCapability(string Name) : ICapability;
+    public record ConfigCapability(string Key, string Value) : ICapability;
+    public record ValidationCapability(string Rule) : ICapability;
+    public record CachingCapability(string CacheKey, TimeSpan Duration) : ICapability;
+    public record LoggingCapability(string LoggerName) : ICapability;
+    public record SecurityCapability(string Permission, string Role) : ICapability;
+    public record MonitoringCapability(string MetricName) : ICapability;
+    public record RetryCapability(string Operation, int MaxRetries) : ICapability;
     
     private IComposition _coreComposition = null!;
     private IComposition _registryComposition = null!;
