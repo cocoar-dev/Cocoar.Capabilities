@@ -128,6 +128,78 @@ internal sealed class Composition : IComposition
         return list.AsReadOnly();
     }
 
+    public TCapability? GetFirstOrDefault<TCapability>() 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
+        {
+            return null;
+        }
+        return (TCapability)arr.GetValue(0)!;
+    }
+
+    public TCapability GetRequiredFirst<TCapability>() 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"Capability of type '{typeof(TCapability).Name}' not found.");
+        }
+        return (TCapability)arr.GetValue(0)!;
+    }
+
+    public bool TryGetFirst<TCapability>(out TCapability capability) 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (_capabilitiesByType.TryGetValue(queryType, out var arr) && arr.Length > 0)
+        {
+            capability = (TCapability)arr.GetValue(0)!;
+            return true;
+        }
+        capability = null!;
+        return false;
+    }
+
+    public TCapability? GetLastOrDefault<TCapability>() 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
+        {
+            return null;
+        }
+        return (TCapability)arr.GetValue(arr.Length - 1)!;
+    }
+
+    public TCapability GetRequiredLast<TCapability>() 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (!_capabilitiesByType.TryGetValue(queryType, out var arr) || arr.Length == 0)
+        {
+            throw new InvalidOperationException(
+                $"Capability of type '{typeof(TCapability).Name}' not found.");
+        }
+        return (TCapability)arr.GetValue(arr.Length - 1)!;
+    }
+
+    public bool TryGetLast<TCapability>(out TCapability capability) 
+        where TCapability : class
+    {
+        var queryType = typeof(TCapability);
+        if (_capabilitiesByType.TryGetValue(queryType, out var arr) && arr.Length > 0)
+        {
+            capability = (TCapability)arr.GetValue(arr.Length - 1)!;
+            return true;
+        }
+        capability = null!;
+        return false;
+    }
+
     public bool Has<TCapability>() 
         where TCapability : class
     {
