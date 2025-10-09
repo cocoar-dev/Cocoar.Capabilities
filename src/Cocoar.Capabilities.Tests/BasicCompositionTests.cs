@@ -19,7 +19,7 @@ public class BasicCompositionTests
         Assert.Single(testCaps);
         Assert.Equal("A", testCaps[0].Name);
 
-        var found = scope.Compositions.FindOrDefault(subject);
+        var found = scope.Compositions.GetOrDefault(subject);
         Assert.Null(found);
     }
 
@@ -33,7 +33,7 @@ public class BasicCompositionTests
             .Add(new TestCapability("B"))
             .Build(useRegistry: true);
 
-        var found = scope.Compositions.FindOrDefault(subject);
+        var found = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(found);
         Assert.Same(composition, found);
         Assert.Equal("B", found!.GetAll<TestCapability>()[0].Name);

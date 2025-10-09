@@ -211,8 +211,8 @@ var composition = scope.For(myObject)
     .Build();
 
 // Access via either contract - both return the same instance
-var validator = composition.GetAll<IValidator>().First();
-var formatter = composition.GetAll<IFormatter>().First();
+var validator = composition.GetFirstOrDefault<IValidator>();
+var formatter = composition.GetFirstOrDefault<IFormatter>();
 
 Console.WriteLine(ReferenceEquals(validator, formatter)); // True
 ```
@@ -370,7 +370,7 @@ var composition = scope.For(document)
     .Build(); // Automatically registered
 
 // Find compositions later
-var found = scope.Compositions.FindOrDefault(document);
+var found = scope.Compositions.GetOrDefault(document);
 if (found != null)
 {
     var capabilities = found.GetAll<EditCapability>();
@@ -388,14 +388,14 @@ if (scope.Compositions.Has(document))
 }
 
 // Find or return null
-var comp = scope.Compositions.FindOrDefault(document);
+var comp = scope.Compositions.GetOrDefault(document);
 if (comp != null)
 {
     // Use composition
 }
 
 // Try pattern
-if (scope.Compositions.TryFind(document, out var composition))
+if (scope.Compositions.TryGet(document, out var composition))
 {
     // Use composition
 }
@@ -443,7 +443,7 @@ var composition = scope.For(subject, useRegistry: true)
     .Build(useRegistry: true);
 
 // This composition IS registered despite global settings
-var found = scope.Compositions.FindOrDefault(subject);
+var found = scope.Compositions.GetOrDefault(subject);
 Console.WriteLine(found != null); // True
 ```
 

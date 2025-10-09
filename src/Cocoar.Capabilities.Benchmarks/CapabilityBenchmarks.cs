@@ -153,7 +153,7 @@ public class CapabilityBenchmarks
         composer.Build(useRegistry: true);
         
         // Retrieve from registry (this is the real-world usage pattern)
-        BenchmarkScopes.Shared.Compositions.TryFind(subject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(subject, out var composition);
         return composition!;
     }
     
@@ -173,7 +173,7 @@ public class CapabilityBenchmarks
         composer.Build(useRegistry: true);
         
         // Retrieve from registry (this is the real-world usage pattern)
-        BenchmarkScopes.Shared.Compositions.TryFind(subject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(subject, out var composition);
         return composition!;
     }
     
@@ -181,28 +181,28 @@ public class CapabilityBenchmarks
     [Benchmark]
     public int Count_Registry_Small_AllCapabilities()
     {
-        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(_registryTestSubject, out var composition);
         return composition!.GetAll().Count;
     }
 
     [Benchmark]
     public int Count_Registry_Large_AllCapabilities()
     {
-        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubjectLarge, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(_registryTestSubjectLarge, out var composition);
         return composition!.GetAll().Count;
     }
     
     [Benchmark]
     public int Count_Registry_Small_FeatureCapabilities()
     {
-        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubject, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(_registryTestSubject, out var composition);
         return composition!.GetAll<FeatureCapability>().Count;
     }
     
     [Benchmark]
     public int Count_Registry_Large_FeatureCapabilities()
     {
-        BenchmarkScopes.Shared.Compositions.TryFind(_registryTestSubjectLarge, out var composition);
+        BenchmarkScopes.Shared.Compositions.TryGet(_registryTestSubjectLarge, out var composition);
         return composition!.GetAll<FeatureCapability>().Count;
     }
 }

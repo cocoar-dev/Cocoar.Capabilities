@@ -19,7 +19,7 @@ public class SubjectKeyCanonicalizerTests
         var s1 = new string("alpha".ToCharArray());
         var s2 = new string("alpha".ToCharArray());
         var comp1 = scope.For(s1).Add(new Cap("A")).Build(useRegistry: true);
-        var comp2 = scope.Compositions.FindRequired(s2);
+        var comp2 = scope.Compositions.GetRequired(s2);
         Assert.Same(comp1, comp2); // value semantics
     }
 

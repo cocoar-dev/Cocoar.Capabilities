@@ -141,7 +141,7 @@ public class GetFirstTests
             .Add(new TestCapability("Second"))
             .Build(useRegistry: true);
 
-        var retrieved = scope.Compositions.FindOrDefault(subject);
+        var retrieved = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(retrieved);
 
         var found = retrieved!.TryGetFirst<TestCapability>(out var result);

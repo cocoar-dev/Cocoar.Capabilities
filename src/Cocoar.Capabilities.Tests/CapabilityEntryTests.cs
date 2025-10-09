@@ -17,11 +17,11 @@ public class CapabilityEntryTests
             .Build(useRegistry: true);
 
         // Use object-based registry path (exercises CapabilityEntry.TryGetComposition(object&))
-        Assert.True(scope.Compositions.TryFind(subject, out var typed));
+        Assert.True(scope.Compositions.TryGet(subject, out var typed));
         Assert.Same(comp, typed);
 
         object boxedSubject = subject;
-        Assert.True(scope.Compositions.TryFind(boxedSubject, out IComposition boxedComp));
+        Assert.True(scope.Compositions.TryGet(boxedSubject, out IComposition boxedComp));
         Assert.Same(comp, boxedComp);
     }
 
@@ -30,7 +30,7 @@ public class CapabilityEntryTests
     {
         using var scope = new CapabilityScope();
         object missing = new Subject(999);
-        Assert.False(scope.Compositions.TryFind(missing, out IComposition? _));
+        Assert.False(scope.Compositions.TryGet(missing, out IComposition? _));
     }
 
     private sealed class DisposableComposerCap<T> : IDisposable where T : notnull
@@ -49,6 +49,6 @@ public class CapabilityEntryTests
         var recomposer = scope.Recompose(comp);
         recomposer.Build(useRegistry: true);
         scope.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => scope.Compositions.TryFind(subject, out _));
+        Assert.Throws<ObjectDisposedException>(() => scope.Compositions.TryGet(subject, out _));
     }
 }

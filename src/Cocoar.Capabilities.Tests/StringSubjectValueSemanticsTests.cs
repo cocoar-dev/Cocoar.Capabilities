@@ -17,7 +17,7 @@ public class StringSubjectValueSemanticsTests
             .Add(new StringCapability("X"))
             .Build(useRegistry: true);
 
-        Assert.True(scope.Compositions.TryFind(s2, out var found));
+        Assert.True(scope.Compositions.TryGet(s2, out var found));
         Assert.Same(comp, found); // value-like semantics now
     }
 
@@ -32,8 +32,8 @@ public class StringSubjectValueSemanticsTests
             .Add(new StringCapability("T"))
             .Build(useRegistry: true);
 
-        Assert.True(scope.Compositions.TryFind(s2, out _));
+        Assert.True(scope.Compositions.TryGet(s2, out _));
         Assert.True(scope.Compositions.Remove(s2));
-        Assert.False(scope.Compositions.TryFind(s1, out _));
+        Assert.False(scope.Compositions.TryGet(s1, out _));
     }
 }

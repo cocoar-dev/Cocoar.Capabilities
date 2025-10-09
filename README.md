@@ -77,8 +77,8 @@ var composition = scope.For(myObject)
     .Build();
 
 // Access via either contract
-var validator = composition.GetAll<IValidator>().First();
-var formatter = composition.GetAll<IFormatter>().First();
+var validator = composition.GetFirstOrDefault<IValidator>();
+var formatter = composition.GetFirstOrDefault<IFormatter>();
 ```
 
 ## 📚 Documentation

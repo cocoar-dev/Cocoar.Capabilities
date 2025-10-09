@@ -14,7 +14,7 @@ public abstract class ConfigBuilder(CapabilityScope capabilityScope): IConfigure
     public static CapabilityScope GetCapabilityScopeFor(ConfigBuilder builder) => builder.CapabilityScope;
 
     public static Composer GetComposer(ConfigBuilder builder) =>
-        GetCapabilityScopeFor(builder).Composers.FindRequired(builder);
+        GetCapabilityScopeFor(builder).Composers.GetRequired(builder);
 }
 
 public sealed class ConfigureBuilder(CapabilityScope capabilityScope)

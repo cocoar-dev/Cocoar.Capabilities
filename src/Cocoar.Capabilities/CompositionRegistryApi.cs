@@ -12,44 +12,44 @@ public class CompositionRegistryApi : IDisposable
         _registry = sharedRegistry;
     }
 
-    public bool TryFind<TSubject>(TSubject subject, out IComposition composition) where TSubject : notnull
+    public bool TryGet<TSubject>(TSubject subject, out IComposition composition) where TSubject : notnull
     {
     return _registry.TryGetComposition(subject, out composition);
     }
 
-    public IComposition? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    public IComposition? GetOrDefault<TSubject>(TSubject subject) where TSubject : notnull
     {
-        return TryFind<TSubject>(subject, out var composition) ? composition : null;
+        return TryGet<TSubject>(subject, out var composition) ? composition : null;
     }
 
-    public IComposition FindRequired<TSubject>(TSubject subject) where TSubject : notnull
+    public IComposition GetRequired<TSubject>(TSubject subject) where TSubject : notnull
     {
-        if (TryFind<TSubject>(subject, out var composition))
+        if (TryGet<TSubject>(subject, out var composition))
             return composition;
 
         throw new InvalidOperationException($"No composition found for subject of type '{typeof(TSubject).Name}'.");
     }
 
-    public bool TryFind(object subject, out IComposition composition)
+    public bool TryGet(object subject, out IComposition composition)
     {
         ArgumentNullException.ThrowIfNull(subject);
         
         return _registry.TryGetComposition(subject, out composition);
     }
 
-    public IComposition? FindOrDefault(object subject)
+    public IComposition? GetOrDefault(object subject)
     {
         ArgumentNullException.ThrowIfNull(subject);
         
-        return TryFind(subject, out IComposition composition) ? composition : null;
+        return TryGet(subject, out IComposition composition) ? composition : null;
     }
     
 
-    public IComposition FindRequired(object subject)
+    public IComposition GetRequired(object subject)
     {
         ArgumentNullException.ThrowIfNull(subject);
         
-        if (TryFind(subject, out IComposition composition))
+        if (TryGet(subject, out IComposition composition))
             return composition;
             
         throw new InvalidOperationException($"No composition found for subject of type '{subject.GetType().Name}'.");

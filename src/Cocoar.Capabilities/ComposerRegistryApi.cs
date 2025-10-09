@@ -12,19 +12,19 @@ public class ComposerRegistryApi : IDisposable
         _registry = sharedRegistry;
     }
 
-    public bool TryFind<TSubject>(TSubject subject, out Composer? composer) where TSubject : notnull
+    public bool TryGet<TSubject>(TSubject subject, out Composer? composer) where TSubject : notnull
     {
     return _registry.TryGetComposer(subject, out composer);
     }
 
-    public Composer? FindOrDefault<TSubject>(TSubject subject) where TSubject : notnull
+    public Composer? GetOrDefault<TSubject>(TSubject subject) where TSubject : notnull
     {
-        return TryFind(subject, out var composer) ? composer : null;
+        return TryGet(subject, out var composer) ? composer : null;
     }
 
-    public Composer FindRequired<TSubject>(TSubject subject) where TSubject : notnull
+    public Composer GetRequired<TSubject>(TSubject subject) where TSubject : notnull
     {
-        if (TryFind(subject, out var composer) && composer != null)
+        if (TryGet(subject, out var composer) && composer != null)
             return composer;
 
         throw new InvalidOperationException($"No composer found for subject of type '{typeof(TSubject).Name}'.");

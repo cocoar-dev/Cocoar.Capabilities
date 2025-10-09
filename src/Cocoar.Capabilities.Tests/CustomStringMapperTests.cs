@@ -27,7 +27,7 @@ public sealed class CustomStringMapperTests
             .Build();
 
         // Lookup using differently cased + spaced variant
-        var found = scope.Compositions.FindOrDefault("HeLLo");
+        var found = scope.Compositions.GetOrDefault("HeLLo");
         Assert.NotNull(found);
         Assert.Same(composer, found);
     }
@@ -46,7 +46,7 @@ public sealed class CustomStringMapperTests
             .Add(new SimpleCapability())
             .Build();
 
-        var found = scope.Compositions.FindOrDefault("A");
+        var found = scope.Compositions.GetOrDefault("A");
         Assert.NotNull(found);
         Assert.Same(composer, found);
     }
