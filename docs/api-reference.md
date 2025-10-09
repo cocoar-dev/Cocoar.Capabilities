@@ -139,7 +139,14 @@ Immutable collection of capabilities attached to a subject. Thread-safe.
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `GetAll<TCapability>()` | `IReadOnlyList<TCapability>` | Retrieves all capabilities of the specified type in order |
+| `GetFirstOrDefault<TCapability>()` | `TCapability?` | Gets the first capability of the specified type, or null if none exists |
+| `GetRequiredFirst<TCapability>()` | `TCapability` | Gets the first capability of the specified type (throws if not found) |
+| `TryGetFirst<TCapability>(out TCapability capability)` | `bool` | Tries to get the first capability of the specified type |
+| `GetLastOrDefault<TCapability>()` | `TCapability?` | Gets the last capability of the specified type, or null if none exists |
+| `GetRequiredLast<TCapability>()` | `TCapability` | Gets the last capability of the specified type (throws if not found) |
+| `TryGetLast<TCapability>(out TCapability capability)` | `bool` | Tries to get the last capability of the specified type |
 | `Has<TCapability>()` | `bool` | Checks if any capability of the specified type exists |
+| `Count<TCapability>()` | `int` | Gets the count of capabilities of the specified type |
 
 ### Primary Capability Methods
 
@@ -160,6 +167,8 @@ Immutable collection of capabilities attached to a subject. Thread-safe.
 |--------|-----------|-----------|
 | `GetPrimary()` | `InvalidOperationException` | If no primary capability exists |
 | `GetRequiredPrimaryAs<T>()` | `InvalidOperationException` | If primary capability doesn't exist or isn't of the specified type |
+| `GetRequiredFirst<T>()` | `InvalidOperationException` | If no capability of the specified type exists |
+| `GetRequiredLast<T>()` | `InvalidOperationException` | If no capability of the specified type exists |
 
 ### Example
 
@@ -167,6 +176,19 @@ Immutable collection of capabilities attached to a subject. Thread-safe.
 // Query capabilities
 var validators = composition.GetAll<IValidator>();
 var hasLogging = composition.Has<ILogger>();
+
+// Get first capability (convenient when you expect only one)
+var config = composition.GetFirstOrDefault<ConfigCapability>();
+if (config != null)
+{
+    // Use config
+}
+
+// Or use Try pattern
+if (composition.TryGetFirst<ConfigCapability>(out var cfg))
+{
+    // Use cfg
+}
 
 // Work with primary
 if (composition.TryGetPrimary(out var primary))

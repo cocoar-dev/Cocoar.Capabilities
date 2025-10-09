@@ -25,6 +25,18 @@ public interface IComposition
 
     IReadOnlyList<object> GetAll();
 
+    TCapability? GetFirstOrDefault<TCapability>() where TCapability : class;
+
+    TCapability GetRequiredFirst<TCapability>() where TCapability : class;
+
+    bool TryGetFirst<TCapability>(out TCapability capability) where TCapability : class;
+
+    TCapability? GetLastOrDefault<TCapability>() where TCapability : class;
+
+    TCapability GetRequiredLast<TCapability>() where TCapability : class;
+
+    bool TryGetLast<TCapability>(out TCapability capability) where TCapability : class;
+
     bool Has<TCapability>() where TCapability : class;
 
     int Count<TCapability>() where TCapability : class;

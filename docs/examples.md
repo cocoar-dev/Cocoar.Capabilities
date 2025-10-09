@@ -45,6 +45,63 @@ if (composition.Has<PrintCapability>())
 {
     Console.WriteLine("Document can be printed");
 }
+
+// Get first capability (convenient when you expect only one)
+var printCap = composition.GetFirstOrDefault<PrintCapability>();
+if (printCap != null)
+{
+    printCap.Print(document);
+}
+```
+
+### Getting Single Capabilities
+
+When you know there's only one capability of a type, use `GetFirstOrDefault` or `TryGetFirst`:
+
+```csharp
+var composition = scope.For(application)
+    .Add(new ConfigurationCapability("appsettings.json"))
+    .Add(new LoggingCapability("app.log"))
+    .Build();
+
+// GetFirstOrDefault returns null if not found
+var config = composition.GetFirstOrDefault<ConfigurationCapability>();
+if (config != null)
+{
+    var setting = config.GetSetting("Key");
+}
+
+// TryGetFirst uses out parameter pattern
+if (composition.TryGetFirst<LoggingCapability>(out var logger))
+{
+    logger.Log("Application started");
+}
+
+// GetRequiredFirst throws if not found (useful when capability is mandatory)
+try
+{
+    var cache = composition.GetRequiredFirst<CacheCapability>();
+    cache.Store("key", value);
+}
+catch (InvalidOperationException ex)
+{
+    Console.WriteLine($"Required capability not found: {ex.Message}");
+}
+
+// GetLast methods - useful for "override" or "last wins" scenarios
+var overrideConfig = composition.GetLastOrDefault<ConfigOverrideCapability>();
+if (overrideConfig != null)
+{
+    // Use the last registered override (highest priority)
+    ApplyConfig(overrideConfig);
+}
+
+// TryGetLast with out parameter
+if (composition.TryGetLast<ThemeCapability>(out var theme))
+{
+    // Apply the most recently added theme
+    ApplyTheme(theme);
+}
 ```
 
 ### Working with Multiple Capabilities of Same Type
