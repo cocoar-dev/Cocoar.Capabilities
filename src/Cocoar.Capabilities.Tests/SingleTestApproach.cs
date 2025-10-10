@@ -2,14 +2,13 @@ using Xunit;
 
 namespace Cocoar.Capabilities.Tests;
 
-public class SingleTestApproach : IDisposable
+public sealed class SingleTestApproach : IDisposable
 {
     private CapabilityScope? _scope;
 
     public void Dispose()
     {
         _scope?.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     [Fact]

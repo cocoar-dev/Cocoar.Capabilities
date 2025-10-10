@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace Cocoar.Capabilities.Benchmarks;
 
 /// <summary>
-/// Benchmarks the incremental overhead introduced when at least one capability implements IOrderedCapability.
+/// Benchmarks the incremental overhead of ordering capabilities via the order parameter.
 /// Key goals:
 /// 1. Measure build-time delta between unordered vs ordered capability sets.
 /// 2. Capture effect of initial ordering complexity (random, already sorted, reverse, duplicated order values).
@@ -18,19 +18,12 @@ public class OrderingBenchmarks : IDisposable
 {
     public record Subject(int Id, string Name);
 
+    // Note: No IOrderedCapability interface in the actual library - ordering is done via the order parameter in Add()
     public interface ITestCap  { }
-    
-    public interface IOrderedCapability
-    {
-        int Order { get; }
-    }
 
     public sealed record PlainCap(string Name) : ITestCap; // Unordered
 
-    public sealed record OrderedCap(string Name, int Priority) : ITestCap, IOrderedCapability
-    {
-        public int Order => Priority;
-    }
+    public sealed record OrderedCap(string Name, int Priority) : ITestCap; // Ordered via parameter
 
     private Subject _subject = null!;
     private CapabilityScope _scope = null!;
@@ -185,9 +178,10 @@ public class OrderingBenchmarks : IDisposable
         for (int i = 0; i < Count; i++) composer.Add(new OrderedCap($"C{i}", _randomOrder[i]));
         return composer.Build();
     }
-        public void Dispose()
-        {
-            _scope.Dispose();
-            GC.SuppressFinalize(this);
-        }
+    
+    public void Dispose()
+    {
+        _scope?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

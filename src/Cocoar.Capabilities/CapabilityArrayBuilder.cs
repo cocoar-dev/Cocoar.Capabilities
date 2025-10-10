@@ -12,17 +12,19 @@ internal static class CapabilityArrayBuilder
         foreach (var typeKvp in typeToIds)
         {
             var ids = typeKvp.Value;
-            var capabilities = new List<(object capability, int? order)>(ids.Count);
-            for (int i = 0; i < ids.Count; i++)
+            var capabilities = new List<CapabilityMetadata>(ids.Count);
+            for (var i = 0; i < ids.Count; i++)
             {
-                capabilities.Add(capabilitiesById[ids[i]]);
+                var id = ids[i];
+                var entry = capabilitiesById[id];
+                capabilities.Add(new CapabilityMetadata(entry.capability, entry.order, id));
             }
 
             CapabilityOrdering.SortInPlace(capabilities);
 
-            var arr = Array.CreateInstance(typeof(object), capabilities.Count);
-            for (int i = 0; i < capabilities.Count; i++) 
-                arr.SetValue(capabilities[i].capability, i);
+            var arr = new CapabilityMetadata[capabilities.Count];
+            for (var i = 0; i < capabilities.Count; i++) 
+                arr[i] = capabilities[i];
             result[typeKvp.Key] = arr;
         }
 

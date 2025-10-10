@@ -27,7 +27,7 @@ internal sealed class CapabilityEntry
             composer = typed;
             return true;
         }
-        composer = default!;
+        composer = null!;
         return false;
     }
 
@@ -38,7 +38,7 @@ internal sealed class CapabilityEntry
             composition = typed;
             return true;
         }
-        composition = default!;
+        composition = null!;
         return false;
     }
 
