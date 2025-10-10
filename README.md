@@ -97,21 +97,15 @@ var formatter = composition.GetFirstOrDefault<IFormatter>();
 - **Primary Capability** - Single "main" capability per subject (via `IPrimaryCapability`)
 - **Registry** - Optional centralized management of compositions
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- [NuGet Package](https://www.nuget.org/packages/Cocoar.Capabilities/)
-- [GitHub Repository](https://github.com/cocoar-dev/Cocoar.Capabilities)
-- [Issue Tracker](https://github.com/cocoar-dev/Cocoar.Capabilities/issues)
-- [Changelog](CHANGELOG.md)
-
 ---
+## Contributing & Versioning
 
-Built with ❤️ by Bernhard Windisch
+- SemVer (additive MINOR, breaking MAJOR)
+- PRs & issues welcome
+- Licensed under Apache License 2.0 (explicit patent grant & attribution via NOTICE)
+
+### License & Trademark
+This project is licensed under the [Apache License, Version 2.0](LICENSE). See [`NOTICE`](NOTICE) for attribution.
+
+"Cocoar" and related marks are trademarks of COCOAR e.U. Use of the name in forks or derivatives should preserve attribution and avoid implying official endorsement. See [TRADEMARKS](TRADEMARKS.md) for permitted and restricted uses.
+
