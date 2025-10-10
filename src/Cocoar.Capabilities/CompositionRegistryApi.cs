@@ -1,6 +1,6 @@
 namespace Cocoar.Capabilities;
 
-public class CompositionRegistryApi : IDisposable
+public sealed class CompositionRegistryApi : IDisposable
 {
     private readonly CapabilityScopeOptions options;
     private readonly DefaultCapabilityRegistry _registry;
@@ -82,16 +82,12 @@ public class CompositionRegistryApi : IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed && disposing)
+        if (_disposed)
         {
-            // Don't dispose the shared registry here - it's owned by CapabilityScope
-            _disposed = true;
+            return;
         }
+
+        // Don't dispose the shared registry here - it's owned by CapabilityScope
+        _disposed = true;
     }
 }

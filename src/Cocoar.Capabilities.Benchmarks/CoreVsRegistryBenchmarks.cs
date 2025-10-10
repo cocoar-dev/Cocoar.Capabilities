@@ -7,17 +7,17 @@ namespace Cocoar.Capabilities.Benchmarks;
 [SimpleJob]
 public class CoreVsRegistryBenchmarks
 {
-    public interface ICapability { }
+    // Note: Capabilities are just plain records - no interface required in the actual library
     
     public record TestSubject(int Id, string Name);
-    public record FeatureCapability(string Name) : ICapability;
-    public record ConfigCapability(string Key, string Value) : ICapability;
-    public record ValidationCapability(string Rule) : ICapability;
-    public record CachingCapability(string CacheKey, TimeSpan Duration) : ICapability;
-    public record LoggingCapability(string LoggerName) : ICapability;
-    public record SecurityCapability(string Permission, string Role) : ICapability;
-    public record MonitoringCapability(string MetricName) : ICapability;
-    public record RetryCapability(string Operation, int MaxRetries) : ICapability;
+    public record FeatureCapability(string Name);
+    public record ConfigCapability(string Key, string Value);
+    public record ValidationCapability(string Rule);
+    public record CachingCapability(string CacheKey, TimeSpan Duration);
+    public record LoggingCapability(string LoggerName);
+    public record SecurityCapability(string Permission, string Role);
+    public record MonitoringCapability(string MetricName);
+    public record RetryCapability(string Operation, int MaxRetries);
     
     private IComposition _coreComposition = null!;
     private IComposition _registryComposition = null!;
@@ -168,7 +168,7 @@ public class CoreVsRegistryBenchmarks
         return composer.Build(useRegistry: true);
     }
     
-    private static ICapability CreateCapability(int subjectId, int capabilityId)
+    private static object CreateCapability(int subjectId, int capabilityId)
     {
         return (capabilityId % 8) switch
         {

@@ -9,6 +9,7 @@ public class Program
         var switcher = BenchmarkSwitcher.FromTypes([
             typeof(CapabilityBenchmarks),
             typeof(CoreVsRegistryBenchmarks),
+            typeof(OrderingBenchmarks),
             typeof(RecompositionBenchmarks),
             typeof(CanonicalizationBenchmarks)
         ]);

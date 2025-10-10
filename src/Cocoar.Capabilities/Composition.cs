@@ -96,11 +96,12 @@ internal sealed class Composition : IComposition
             return Array.Empty<TCapability>();
         }
 
-        // Arrays are already stably ordered during build; just project to the typed result.
-        var typed = new TCapability[arr.Length];
-        for (int i = 0; i < arr.Length; i++)
+        // Arrays store CapabilityMetadata, extract just the capabilities
+        var metadataArr = (CapabilityMetadata[])arr;
+        var typed = new TCapability[metadataArr.Length];
+        for (int i = 0; i < metadataArr.Length; i++)
         {
-            typed[i] = (TCapability)arr.GetValue(i)!;
+            typed[i] = (TCapability)metadataArr[i].Capability;
         }
         return typed;
     }
@@ -110,22 +111,44 @@ internal sealed class Composition : IComposition
         if (_capabilitiesByType.Count == 0)
             return Array.Empty<object>();
 
-        var list = new List<object>(_totalCapabilityCount);
+        // Collect all capabilities with their metadata for global sorting
+        var allMetadata = new List<CapabilityMetadata>(_totalCapabilityCount);
+        var seen = new HashSet<object>(_totalCapabilityCount);
+        
         foreach (var array in _capabilitiesByType.Values)
         {
-            for (int i = 0; i < array.Length; i++)
+            var metadataArr = (CapabilityMetadata[])array;
+            for (int i = 0; i < metadataArr.Length; i++)
             {
-                list.Add(array.GetValue(i)!);
+                var metadata = metadataArr[i];
+                // Deduplicate: same capability may appear under multiple types
+                if (seen.Add(metadata.Capability))
+                {
+                    allMetadata.Add(metadata);
+                }
             }
         }
 
-        // NOTE: Arrays are already sorted by order during Build().
-        // However, when we combine capabilities from different type buckets,
-        // we need to maintain stable ordering across the entire list.
-        // Since we don't have order information here, we'll return them
-        // in the order they were stored (by type bucket).
+        // Sort by (order ?? 0, insertionId) for global deterministic ordering
+        allMetadata.Sort((a, b) =>
+        {
+            int oa = a.Order ?? 0;
+            int ob = b.Order ?? 0;
+            if (oa != ob)
+            {
+                return oa.CompareTo(ob);
+            }
+            return a.InsertionId.CompareTo(b.InsertionId);
+        });
+
+        // Extract just the capabilities
+        var result = new object[allMetadata.Count];
+        for (int i = 0; i < allMetadata.Count; i++)
+        {
+            result[i] = allMetadata[i].Capability;
+        }
         
-        return list.AsReadOnly();
+        return result;
     }
 
     public TCapability? GetFirstOrDefault<TCapability>() 
@@ -136,7 +159,8 @@ internal sealed class Composition : IComposition
         {
             return null;
         }
-        return (TCapability)arr.GetValue(0)!;
+        var metadataArr = (CapabilityMetadata[])arr;
+        return (TCapability)metadataArr[0].Capability;
     }
 
     public TCapability GetRequiredFirst<TCapability>() 
@@ -148,7 +172,8 @@ internal sealed class Composition : IComposition
             throw new InvalidOperationException(
                 $"Capability of type '{typeof(TCapability).Name}' not found.");
         }
-        return (TCapability)arr.GetValue(0)!;
+        var metadataArr = (CapabilityMetadata[])arr;
+        return (TCapability)metadataArr[0].Capability;
     }
 
     public bool TryGetFirst<TCapability>(out TCapability capability) 
@@ -157,7 +182,8 @@ internal sealed class Composition : IComposition
         var queryType = typeof(TCapability);
         if (_capabilitiesByType.TryGetValue(queryType, out var arr) && arr.Length > 0)
         {
-            capability = (TCapability)arr.GetValue(0)!;
+            var metadataArr = (CapabilityMetadata[])arr;
+            capability = (TCapability)metadataArr[0].Capability;
             return true;
         }
         capability = null!;
@@ -172,7 +198,8 @@ internal sealed class Composition : IComposition
         {
             return null;
         }
-        return (TCapability)arr.GetValue(arr.Length - 1)!;
+        var metadataArr = (CapabilityMetadata[])arr;
+        return (TCapability)metadataArr[^1].Capability;
     }
 
     public TCapability GetRequiredLast<TCapability>() 
@@ -184,7 +211,8 @@ internal sealed class Composition : IComposition
             throw new InvalidOperationException(
                 $"Capability of type '{typeof(TCapability).Name}' not found.");
         }
-        return (TCapability)arr.GetValue(arr.Length - 1)!;
+        var metadataArr = (CapabilityMetadata[])arr;
+        return (TCapability)metadataArr[^1].Capability;
     }
 
     public bool TryGetLast<TCapability>(out TCapability capability) 
@@ -193,7 +221,8 @@ internal sealed class Composition : IComposition
         var queryType = typeof(TCapability);
         if (_capabilitiesByType.TryGetValue(queryType, out var arr) && arr.Length > 0)
         {
-            capability = (TCapability)arr.GetValue(arr.Length - 1)!;
+            var metadataArr = (CapabilityMetadata[])arr;
+            capability = (TCapability)metadataArr[^1].Capability;
             return true;
         }
         capability = null!;

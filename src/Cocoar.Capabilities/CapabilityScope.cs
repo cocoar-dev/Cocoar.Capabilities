@@ -16,7 +16,6 @@ public sealed class CapabilityScope : IDisposable
         _compositions = new CompositionRegistryApi(_options, _sharedRegistry);
     }
 
-    internal bool IsDisposed => _disposed;
     public ComposerRegistryApi Composers => _composers;
     public CompositionRegistryApi Compositions => _compositions;
     public Composer For(object subject, bool? useRegistry = null)
@@ -34,11 +33,14 @@ public sealed class CapabilityScope : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _composers.Dispose();
         _compositions.Dispose();
         _sharedRegistry.Dispose();
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }

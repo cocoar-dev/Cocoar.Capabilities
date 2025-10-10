@@ -1,9 +1,5 @@
 namespace Cocoar.Capabilities;
 
-/// <summary>
-/// Internal storage for capabilities attached to an object instance.
-/// This is instance-based, not type-based.
-/// </summary>
 internal sealed class CapabilityStore
 {
     private int _nextCapabilityId;
@@ -19,7 +15,7 @@ internal sealed class CapabilityStore
 
     internal void Add(object capability, Type singleType, bool isPrimary, int? order)
     {
-        var id = _nextCapabilityId++;
+        int id = _nextCapabilityId++;
         _capabilitiesById[id] = (capability, order);
         RegisterIdUnderType(id, singleType);
         if (isPrimary && singleType != PrimaryMarkerType)
@@ -30,13 +26,16 @@ internal sealed class CapabilityStore
 
     internal void Add(object capability, IEnumerable<Type> types, bool includesPrimary, int? order)
     {
-        var id = _nextCapabilityId++;
+        int id = _nextCapabilityId++;
         _capabilitiesById[id] = (capability, order);
         bool containsMarker = false;
         foreach (var t in types)
         {
             RegisterIdUnderType(id, t);
-            if (t == PrimaryMarkerType) containsMarker = true;
+            if (t == PrimaryMarkerType)
+            {
+                containsMarker = true;
+            }
         }
         if (includesPrimary && !containsMarker)
         {
@@ -49,16 +48,22 @@ internal sealed class CapabilityStore
         var idsToRemove = new List<int>();
         foreach (var kvp in _capabilitiesById)
         {
-            if (predicate(kvp.Value.capability)) idsToRemove.Add(kvp.Key);
+            if (predicate(kvp.Value.capability))
+            {
+                idsToRemove.Add(kvp.Key);
+            }
         }
 
-        foreach (var id in idsToRemove)
+        foreach (int id in idsToRemove)
         {
             _capabilitiesById.Remove(id);
             foreach (var typeKvp in _typeToIds.ToList())
             {
                 typeKvp.Value.Remove(id);
-                if (typeKvp.Value.Count == 0) _typeToIds.Remove(typeKvp.Key);
+                if (typeKvp.Value.Count == 0)
+                {
+                    _typeToIds.Remove(typeKvp.Key);
+                }
             }
         }
     }
@@ -67,7 +72,9 @@ internal sealed class CapabilityStore
 
     internal void SeedFromComposition(IComposition composition)
     {
-        // Use reflection to access internal method since Composition is generic
+        // Use reflection to access internal method. Not cached because:
+        // - Recompose is rare, each CapabilityStore used once
+        // - Overhead negligible vs. actual recompose work
         var compositionType = composition.GetType();
         var getMethod = compositionType.GetMethod("GetCapabilitiesByType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         
@@ -77,13 +84,40 @@ internal sealed class CapabilityStore
         }
 
         var capabilitiesByType = (IReadOnlyDictionary<Type, Array>)getMethod.Invoke(composition, null)!;
+        
+        // Collect all unique capabilities by insertionId to avoid duplicates.
+        // Build mapping of insertionId -> (metadata, types) in one pass.
+        var metadataById = new Dictionary<int, (CapabilityMetadata metadata, List<Type> types)>();
+        
         foreach (var typeKvp in capabilitiesByType)
         {
-            foreach (object capability in typeKvp.Value)
+            var metadataArr = (CapabilityMetadata[])typeKvp.Value;
+            for (int i = 0; i < metadataArr.Length; i++)
             {
-                var id = _nextCapabilityId++;
-                _capabilitiesById[id] = (capability, null);  // No order info when recomposing
-                RegisterIdUnderType(id, typeKvp.Key);
+                var metadata = metadataArr[i];
+                if (metadataById.TryGetValue(metadata.InsertionId, out var existing))
+                {
+                    existing.types.Add(typeKvp.Key);
+                }
+                else
+                {
+                    var types = new List<Type>(4) { typeKvp.Key };
+                    metadataById[metadata.InsertionId] = (metadata, types);
+                }
+            }
+        }
+        
+        // Add capabilities in insertion order to maintain stable IDs
+        foreach (var kvp in metadataById.OrderBy(x => x.Key))
+        {
+            var (metadata, types) = kvp.Value;
+            int id = _nextCapabilityId++;
+            _capabilitiesById[id] = (metadata.Capability, metadata.Order);
+            
+            // Register under all types this capability appeared in
+            for (int i = 0; i < types.Count; i++)
+            {
+                RegisterIdUnderType(id, types[i]);
             }
         }
     }
@@ -95,7 +129,7 @@ internal sealed class CapabilityStore
     {
         if (!_typeToIds.TryGetValue(type, out var list))
         {
-            list = new List<int>();
+            list = [];
             _typeToIds[type] = list;
         }
         list.Add(id);
