@@ -21,18 +21,20 @@
 
   <!-- ===== PACKAGE METADATA ===== -->
   <PropertyGroup>
-    <Authors>Cocoar Development Team</Authors>
-    <Company>Cocoar</Company>
+    <Authors>Bernhard Windisch</Authors>
+    <Company>COCOAR e.U.</Company>
     <Product>Cocoar.Capabilities</Product>
-    <Copyright>Copyright © Cocoar Development Team $([System.DateTime]::Now.Year)</Copyright>
+    <Copyright>Copyright © COCOAR $([System.DateTime]::Now.Year)</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/cocoar-dev/Cocoar.Capabilities</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://cocoar.dev</PackageProjectUrl>
     <RepositoryUrl>https://github.com/cocoar-dev/Cocoar.Capabilities</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>capabilities;composition;patterns;architecture;dotnet;csharp</PackageTags>
-    <PackageReleaseNotes>See CHANGELOG.md for detailed release notes.</PackageReleaseNotes>
-    <Description>High-performance, low-allocation capability composition library for .NET. Implements the Capability Composition pattern for building extensible, type-safe systems using Extension Object and Role Object architectural patterns.</Description>
+    <PackageTags>immutable;csharp;dotnet;high-performance;architecture;composition;design-patterns;extensibility;type-safe;capabilities;fluent-api;capability-pattern;cocoar</PackageTags>
+    <PackageReleaseNotes>Full release notes: https://github.com/cocoar-dev/Cocoar.Capabilities/blob/develop/CHANGELOG.md</PackageReleaseNotes>
+    <PackageDescription>Capability Composition for .NET — extensible, type-safe, and high-performance.</PackageDescription>
+    <PackageIcon>package-icon.png</PackageIcon>
   </PropertyGroup>
 
 
@@ -53,9 +55,11 @@
 
   <!-- ===== PACKAGE REFERENCES (Global) ===== -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
-    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildThisFileDirectory)..\CHANGELOG.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="README.md" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Pack="true" PackagePath="LICENSE" />
+    <None Include="$(MSBuildThisFileDirectory)..\CHANGELOG.md" Pack="true" PackagePath="CHANGELOG.md" />
+    <None Include="$(MSBuildThisFileDirectory)..\package-icon.png" Pack="true" PackagePath="package-icon.png" />
+    <None Include="$(MSBuildThisFileDirectory)..\social-preview-small.png" Pack="true" PackagePath="social-preview-small.png" />
   </ItemGroup>
 
   <!-- ===== TOOLING PACKAGES (SourceLink) ===== -->

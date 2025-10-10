@@ -566,8 +566,7 @@ if (CanPerform(composition, "Users", "Delete"))
     Console.WriteLine("User can delete users");
 }
 
-// Get role
-var role = composition.GetPrimaryAs<UserRole>();
+var role = composition.GetPrimaryOrDefaultAs<UserRole>();
 Console.WriteLine($"Role: {role?.RoleName}");
 ```
 

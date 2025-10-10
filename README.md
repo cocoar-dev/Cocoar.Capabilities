@@ -1,11 +1,14 @@
-# Cocoar.Capabilities
+# High-performance capability composition for .NET
+
+![Cocoar.Capabilities](social-preview-small.png)
+> A high-performance, low-allocation capability composition library for .NET that implements the Capability Composition pattern for building extensible, type-safe systems.
 
 [![NuGet](https://img.shields.io/nuget/v/Cocoar.Capabilities.svg)](https://www.nuget.org/packages/Cocoar.Capabilities/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Downloads](https://img.shields.io/nuget/dt/Cocoar.Capabilities.svg)](https://www.nuget.org/packages/Cocoar.Capabilities/)
 
-A high-performance, low-allocation capability composition library for .NET that implements the Capability Composition pattern for building extensible, type-safe systems.
+
 
 ## 🚀 Features
 
@@ -83,8 +86,8 @@ var formatter = composition.GetFirstOrDefault<IFormatter>();
 
 ## 📚 Documentation
 
-- **[Examples](docs/Examples.md)** - Detailed examples and use cases
-- **[API Reference](docs/API-Reference.md)** - Complete API documentation
+- **[Examples](docs/examples.md)** - Detailed examples and use cases
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
 
 ## 🎯 Key Concepts
 
@@ -111,4 +114,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ---
 
-Built with ❤️ by the Cocoar Development Team
+Built with ❤️ by Bernhard Windisch
