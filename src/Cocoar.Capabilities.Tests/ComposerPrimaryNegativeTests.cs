@@ -11,7 +11,7 @@ public class ComposerPrimaryNegativeTests
     public void Add_DuplicatePrimary_Throws()
     {
         using var scope = new CapabilityScope();
-        var composer = scope.For(new Subject(1));
+        var composer = scope.Compose(new Subject(1));
         composer.Add(new PrimaryA("P1"));
         Assert.Throws<InvalidOperationException>(() => composer.Add(new PrimaryB("P2")));
     }
@@ -20,7 +20,7 @@ public class ComposerPrimaryNegativeTests
     public void AddAs_PrimaryContract_Duplicate_Throws()
     {
         using var scope = new CapabilityScope();
-        var composer = scope.For(new Subject(2));
+        var composer = scope.Compose(new Subject(2));
         composer.AddAs<IPrimaryCapability>(new PrimaryA("P1"));
         Assert.Throws<InvalidOperationException>(() => composer.AddAs<IPrimaryCapability>(new PrimaryB("P2")));
     }
@@ -29,7 +29,7 @@ public class ComposerPrimaryNegativeTests
     public void AddTuple_WithPrimaryThenDuplicatePrimary_Throws()
     {
         using var scope = new CapabilityScope();
-        var composer = scope.For(new Subject(3));
+        var composer = scope.Compose(new Subject(3));
         composer.AddAs<(IPrimaryCapability, PrimaryA)>(new PrimaryA("P1"));
         Assert.Throws<InvalidOperationException>(() => composer.AddAs<(IPrimaryCapability, PrimaryB)>(new PrimaryB("P2")));
     }

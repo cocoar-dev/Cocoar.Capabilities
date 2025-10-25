@@ -43,7 +43,7 @@ public class BuildRegistryDecisionMatrixTests
         bool effectiveComposition = compositionOverride ?? scopeCompositionDefault;
 
         // Create composer (registration may happen now)
-        var composer = scope.For(subject, composerOverride);
+        var composer = scope.Compose(subject, composerOverride);
         composer.Add(new TestCapability("T"));
 
         var preComposer = scope.Composers.GetOrDefault(subject);

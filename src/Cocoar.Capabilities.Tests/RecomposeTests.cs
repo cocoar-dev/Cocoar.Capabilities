@@ -9,7 +9,7 @@ public class RecomposeTests
     {
         using var scope = new CapabilityScope(new CapabilityScopeOptions { UseComposerRegistry = false, UseCompositionRegistry = false });
         var subject = new StringSubject("r1");
-        var baseComp = scope.For(subject).Add(new TestCapability("A")).Build(useRegistry: false);
+        var baseComp = scope.Compose(subject).Add(new TestCapability("A")).Build(useRegistry: false);
         Assert.Null(scope.Composers.GetOrDefault(subject));
         Assert.Null(scope.Compositions.GetOrDefault(subject));
 
@@ -27,7 +27,7 @@ public class RecomposeTests
     {
         using var scope = new CapabilityScope(new CapabilityScopeOptions { UseComposerRegistry = true, UseCompositionRegistry = false });
         var subject = new StringSubject("r2");
-    var baseComp = scope.For(subject).Add(new TestCapability("A")).Build(useRegistry: false); // composition explicitly disabled
+    var baseComp = scope.Compose(subject).Add(new TestCapability("A")).Build(useRegistry: false); // composition explicitly disabled
     // Composer registry true, composition disabled => composer removed, no composition stored
     Assert.Null(scope.Compositions.GetOrDefault(subject));
         Assert.Null(scope.Composers.GetOrDefault(subject));
@@ -46,7 +46,7 @@ public class RecomposeTests
     {
         using var scope = new CapabilityScope(new CapabilityScopeOptions { UseComposerRegistry = true, UseCompositionRegistry = true });
         var subject = new StringSubject("r3");
-        var baseComp = scope.For(subject).Add(new TestCapability("A")).Build();
+        var baseComp = scope.Compose(subject).Add(new TestCapability("A")).Build();
         var stored = scope.Compositions.GetOrDefault(subject);
         Assert.NotNull(stored);
         Assert.Same(baseComp, stored);

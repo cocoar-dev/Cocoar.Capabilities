@@ -8,7 +8,7 @@ public interface IConfigureBuilder
 
 public abstract class ConfigBuilder(CapabilityScope capabilityScope): IConfigureBuilder
 {
-    protected readonly CapabilityScope CapabilityScope = capabilityScope;
+    protected CapabilityScope CapabilityScope {get;} = capabilityScope;
     internal abstract ConfigBuilder Build();
 
     public static CapabilityScope GetCapabilityScopeFor(ConfigBuilder builder) => builder.CapabilityScope;

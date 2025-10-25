@@ -1,6 +1,6 @@
 namespace Cocoar.Capabilities;
 
-internal sealed class Composition : IComposition
+public sealed class Composition : IComposition
 {
     private IReadOnlyDictionary<Type, Array> _capabilitiesByType;
     private int _totalCapabilityCount;

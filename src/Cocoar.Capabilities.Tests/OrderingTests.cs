@@ -22,7 +22,7 @@ public class OrderingTests
     {
         var scope = new CapabilityScope();
         var subj = new Subject(1);
-        var composer = scope.For(subj);
+        var composer = scope.Compose(subj);
 
         // Intentionally add in unsorted order
         composer.Add(new OrderedCap(1, 50), order: 50);
@@ -43,7 +43,7 @@ public class OrderingTests
     {
         var scope = new CapabilityScope();
         var subj = new Subject(2);
-        var composer = scope.For(subj);
+        var composer = scope.Compose(subj);
 
         // All same priority => resulting order must match insertion order
         composer.Add(new OrderedCap(1, 5), order: 5);
@@ -64,7 +64,7 @@ public class OrderingTests
     {
         var scope = new CapabilityScope();
         var subj = new Subject(3);
-        var composer = scope.For(subj);
+        var composer = scope.Compose(subj);
 
         composer.Add(new PlainCap(1));
         composer.Add(new PlainCap(2));
@@ -83,7 +83,7 @@ public class OrderingTests
     {
         var scope = new CapabilityScope();
         var subj = new Subject(4);
-        var composer = scope.For(subj);
+        var composer = scope.Compose(subj);
 
         // Plain (order defaults to 0)
         composer.Add(new PlainCap(1));           // P1

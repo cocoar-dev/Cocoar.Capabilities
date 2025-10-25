@@ -57,7 +57,7 @@ New Architecture Mapping
 ------------------------
 Old Static API | New Scoped API / Behavior
 -------------- | -------------------------
-Composer.For(subject).BuildAndRegister() | scope.For(subject).Add(...).Build(useRegistry: true)
+Composer.For(subject).BuildAndRegister() | scope.Compose(subject).Add(...).Build(useRegistry: true)
 Composition.FindOrDefault(subject)       | scope.Compositions.FindOrDefault(subject)
 Composition.FindRequired(subject)        | scope.Compositions.FindRequired(subject) (to implement if needed)
 Composition.TryFind(subject, out comp)   | scope.Compositions.TryFind(subject, out comp)

@@ -43,7 +43,7 @@ public class CapabilityBenchmarks
         {
             // Single subject scenario
             var subject = new TestSubject(0, "Subject_0");
-            var composer = BenchmarkScopes.Shared.For(subject);
+            var composer = BenchmarkScopes.Shared.Compose(subject);
             
             for (int c = 0; c < capabilitiesPerSubject; c++)
             {
@@ -58,7 +58,7 @@ public class CapabilityBenchmarks
             // Multiple subjects - build separately and combine manually for testing
             // Note: This is a simplified approach for benchmarking purposes
             var firstSubject = new TestSubject(0, "Subject_0");
-            var composer = BenchmarkScopes.Shared.For(firstSubject);
+            var composer = BenchmarkScopes.Shared.Compose(firstSubject);
             
             // Add capabilities for just the first subject to get basic composition
             for (int c = 0; c < capabilitiesPerSubject; c++)
@@ -73,7 +73,7 @@ public class CapabilityBenchmarks
     
     private static IComposition CreateAndRegisterComposition(TestSubject subject, int capabilitiesCount)
     {
-        var composer = BenchmarkScopes.Shared.For(subject);
+        var composer = BenchmarkScopes.Shared.Compose(subject);
         
         for (int c = 0; c < capabilitiesCount; c++)
         {
@@ -142,7 +142,7 @@ public class CapabilityBenchmarks
     {
         // Use same pattern as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");
-        var composer = BenchmarkScopes.Shared.For(subject);
+        var composer = BenchmarkScopes.Shared.Compose(subject);
         
         for (int c = 0; c < 50; c++)
         {
@@ -162,7 +162,7 @@ public class CapabilityBenchmarks
     {
         // Use SAME subject ID as Core version for fair comparison
         var subject = new TestSubject(0, "Subject_0");
-        var composer = BenchmarkScopes.Shared.For(subject);
+        var composer = BenchmarkScopes.Shared.Compose(subject);
         
         for (int c = 0; c < 500; c++)
         {

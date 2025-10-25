@@ -39,7 +39,7 @@ using var scope = new CapabilityScope();
 var document = new Document("README.md");
 
 // Compose capabilities
-var composition = scope.For(document)
+var composition = scope.Compose(document)
     .Add(new EditCapability())
     .Add(new PrintCapability())
     .Add(new ShareCapability())
@@ -60,7 +60,7 @@ Enforce a single "primary" capability per subject:
 ```csharp
 public record UserPrimaryCapability(string UserId, string Name) : IPrimaryCapability;
 
-var composition = scope.For(user)
+var composition = scope.Compose(user)
     .Add(new UserPrimaryCapability("user123", "John Doe"))
     .Add(new AdminCapability("Level2"))
     .Build();
@@ -75,7 +75,7 @@ Console.WriteLine($"User: {primary.Name}");
 Register a single capability under multiple contract types:
 
 ```csharp
-var composition = scope.For(myObject)
+var composition = scope.Compose(myObject)
     .AddAs<(IValidator, IFormatter)>(new DataProcessor())
     .Build();
 
@@ -84,10 +84,52 @@ var validator = composition.GetFirstOrDefault<IValidator>();
 var formatter = composition.GetFirstOrDefault<IFormatter>();
 ```
 
+### Owner and Anchors
+
+Associate scopes with well-known subjects for enhanced composability:
+
+```csharp
+// Setup scope with owner and anchors
+var pipeline = new PipelineHost("Main");
+var envContext = new EnvironmentContext { Name = "Production" };
+
+using var scope = new CapabilityScope();
+scope.Owner.Set(pipeline).Scope
+     .Anchors.Set<EnvironmentContext>(envContext).Scope
+     .Anchors.Set("tenant", tenantContext);
+
+// Later, compose capabilities using owner/anchors
+scope.Owner.Compose<PipelineHost>()
+           .Add(new DiagnosticsCapability())
+           .Build();
+
+scope.Anchors.Compose<EnvironmentContext>()
+             .Add(new EnvironmentCapability())
+             .Build();
+
+// Retrieve owner or anchors (throwing)
+var owner = scope.Owner.Get<PipelineHost>();
+var env = scope.Anchors.Get<EnvironmentContext>();
+
+// Safe retrieval for long-running scopes
+if (scope.Owner.TryGet<PipelineHost>(out var pipelineOwner))
+{
+    // Owner is alive, use it
+}
+
+if (scope.Anchors.TryGet<EnvironmentContext>(out var envAnchor))
+{
+    // Anchor is alive, use it
+}
+```
+
+**Learn more:** [Owner and Anchor Quick Reference](docs/owner-and-anchor-quick-reference.md)
+
 ## 📚 Documentation
 
 - **[Examples](docs/examples.md)** - Detailed examples and use cases
 - **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Owner and Anchors](docs/owner-and-anchor-quick-reference.md)** - Scope association patterns
 
 ## 🎯 Key Concepts
 
@@ -95,6 +137,7 @@ var formatter = composition.GetFirstOrDefault<IFormatter>();
 - **Composer** - Fluent builder for creating compositions
 - **Composition** - Immutable collection of capabilities attached to a subject
 - **Primary Capability** - Single "main" capability per subject (via `IPrimaryCapability`)
+- **Owner & Anchors** - Associate scopes with well-known subjects for enhanced composability
 - **Registry** - Optional centralized management of compositions
 
 ---

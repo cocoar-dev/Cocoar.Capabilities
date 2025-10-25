@@ -11,7 +11,7 @@ public class NegativeInvariantTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("dbl");
-        var composer = scope.For(subject)
+        var composer = scope.Compose(subject)
             .Add(new TestCapability("A"));
         var comp = composer.Build();
         Assert.NotNull(comp);
@@ -23,7 +23,7 @@ public class NegativeInvariantTests
     public void Add_AfterBuild_Throws()
     {
         using var scope = NewScope();
-        var composer = scope.For(new StringSubject("after"))
+        var composer = scope.Compose(new StringSubject("after"))
             .Add(new TestCapability("X"));
         composer.Build();
         var ex = Assert.Throws<InvalidOperationException>(() => composer.Add(new TestCapability("Y")));
@@ -35,27 +35,27 @@ public class NegativeInvariantTests
     {
         var scope = NewScope();
         var subject = new StringSubject("disp");
-        var composer = scope.For(subject).Add(new TestCapability("A"));
+        var composer = scope.Compose(subject).Add(new TestCapability("A"));
         scope.Dispose();
         // Existing composer can still build (current implementation) - treat as allowed invariant
         var comp = composer.Build();
         Assert.NotNull(comp);
         // But creating a new composer after dispose should throw
-        Assert.Throws<ObjectDisposedException>(() => scope.For(new StringSubject("new")));
+        Assert.Throws<ObjectDisposedException>(() => scope.Compose(new StringSubject("new")));
     }
 
     [Fact]
     public void For_NullSubject_Throws()
     {
         using var scope = NewScope();
-        Assert.Throws<ArgumentNullException>(() => scope.For(null!));
+        Assert.Throws<ArgumentNullException>(() => scope.Compose(null!));
     }
 
     [Fact]
     public void Add_NullCapability_Throws()
     {
         using var scope = NewScope();
-        var composer = scope.For(new StringSubject("nullAdd"));
+        var composer = scope.Compose(new StringSubject("nullAdd"));
         Assert.Throws<ArgumentNullException>(() => composer.Add(null!));
     }
 
@@ -63,7 +63,7 @@ public class NegativeInvariantTests
     public void AddAs_NullCapability_Throws()
     {
         using var scope = NewScope();
-        var composer = scope.For(new StringSubject("nullAddAs"));
+        var composer = scope.Compose(new StringSubject("nullAddAs"));
         Assert.Throws<ArgumentNullException>(() => composer.AddAs<ITestContract>(null!));
     }
 
@@ -71,7 +71,7 @@ public class NegativeInvariantTests
     public void TryAdd_NullCapability_Throws()
     {
         using var scope = NewScope();
-        var composer = scope.For(new StringSubject("nullTryAdd"));
+        var composer = scope.Compose(new StringSubject("nullTryAdd"));
         Assert.Throws<ArgumentNullException>(() => composer.TryAdd<TestCapability>(null!));
     }
 
@@ -79,7 +79,7 @@ public class NegativeInvariantTests
     public void TryAddAs_NullCapability_Throws()
     {
         using var scope = NewScope();
-        var composer = scope.For(new StringSubject("nullTryAddAs"));
+        var composer = scope.Compose(new StringSubject("nullTryAddAs"));
         Assert.Throws<ArgumentNullException>(() => composer.TryAddAs<ITestContract>(null!));
     }
 
@@ -87,7 +87,7 @@ public class NegativeInvariantTests
     public void WithPrimary_Null_AfterPrimary_Removes()
     {
         using var scope = NewScope();
-        var comp = scope.For(new StringSubject("primNull"))
+        var comp = scope.Compose(new StringSubject("primNull"))
             .Add(new PrimaryTestCapability("P"))
             .WithPrimary(null)
             .Build();
@@ -99,7 +99,7 @@ public class NegativeInvariantTests
     {
         var scope = NewScope();
         var subject = new StringSubject("life");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
             .Add(new TestCapability("A"))
             .Add(new TestCapability("B"))
             .Build();
@@ -109,6 +109,6 @@ public class NegativeInvariantTests
         // Snapshot still usable
         Assert.Equal(2, comp.GetAll<TestCapability>().Count);
         // Creating new composer should throw
-        Assert.Throws<ObjectDisposedException>(() => scope.For(new StringSubject("after")));
+        Assert.Throws<ObjectDisposedException>(() => scope.Compose(new StringSubject("after")));
     }
 }

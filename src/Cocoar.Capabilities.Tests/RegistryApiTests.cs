@@ -34,7 +34,7 @@ public class RegistryApiTests
     {
         using var scope = new CapabilityScope();
         var subject = new Subject(4);
-        scope.For(subject).Add(new Cap("X")).Build(useRegistry: true);
+        scope.Compose(subject).Add(new Cap("X")).Build(useRegistry: true);
         Assert.True(scope.Compositions.Remove(subject));
         Assert.False(scope.Compositions.TryGet(subject, out _));
     }

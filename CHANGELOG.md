@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Owner and Anchors API**: Associate scopes with context objects
+  - `scope.Owner.*` API for managing a single distinguished owner
+  - `scope.Anchors.*` API for managing typed and named anchors
+  - Owner safety: `Set()` throws if owner already set, `Replace()` for explicit replacement
+  - Weak reference storage prevents memory leaks
+  - Fluent chaining with `.Scope` property to return to scope
+  - Direct composition via `Owner.Compose()` and `Anchors.Compose<T>()`
+  - Methods: `Set`, `Replace`, `Get`, `GetOrThrow`, `TryGet`, `Compose`, `GetComposition`
+  - Comprehensive documentation in ADR, README, API reference, and quick reference guide
+
 ## [1.0.0] - 2025-10-10
 
 ### Added

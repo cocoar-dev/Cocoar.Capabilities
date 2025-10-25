@@ -12,7 +12,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p0");
-        var comp = scope.For(subject).Add(new TestCapability("A")).Build();
+        var comp = scope.Compose(subject).Add(new TestCapability("A")).Build();
         Assert.False(comp.HasPrimary());
     }
 
@@ -21,7 +21,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p1");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
                         .Add(new PrimaryTestCapability("P"))
                         .Add(new TestCapability("X"))
                         .Build();
@@ -34,7 +34,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p2");
-        var comp = scope.For(subject).Add(new TestCapability("A")).Build();
+        var comp = scope.Compose(subject).Add(new TestCapability("A")).Build();
         Assert.False(comp.TryGetPrimary(out var _));
     }
 
@@ -43,7 +43,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p3");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
             .Add(new PrimaryTestCapability("P"))
             .Add(new TestCapability("A"))
             .Build();
@@ -56,7 +56,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p4");
-        var comp = scope.For(subject).Add(new PrimaryTestCapability("P")).Build();
+        var comp = scope.Compose(subject).Add(new PrimaryTestCapability("P")).Build();
         var primary = comp.GetPrimary();
         Assert.Equal("P", ((PrimaryTestCapability)primary).Name);
     }
@@ -66,7 +66,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p5");
-        var comp = scope.For(subject).Add(new TestCapability("X")).Build();
+        var comp = scope.Compose(subject).Add(new TestCapability("X")).Build();
         var ex = Assert.Throws<InvalidOperationException>(() => comp.GetPrimary());
         Assert.Contains("Primary capability not found", ex.Message);
     }
@@ -76,7 +76,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p6");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
                         .Add(new PrimaryTestCapability("P"))
                         .Build();
         Assert.False(comp.TryGetPrimaryAs<AlternatePrimaryCapability>(out _));
@@ -87,7 +87,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p7");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
                         .Add(new PrimaryTestCapability("P"))
                         .Build();
     Assert.True(comp.TryGetPrimaryAs<PrimaryTestCapability>(out var primary));
@@ -99,7 +99,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p8");
-        var comp = scope.For(subject).Add(new TestCapability("X")).Build();
+        var comp = scope.Compose(subject).Add(new TestCapability("X")).Build();
         Assert.Null(comp.GetPrimaryOrDefault());
     }
 
@@ -108,7 +108,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p9");
-        var comp = scope.For(subject).Add(new PrimaryTestCapability("P")).Build();
+        var comp = scope.Compose(subject).Add(new PrimaryTestCapability("P")).Build();
     var p = comp.GetPrimaryOrDefaultAs<PrimaryTestCapability>();
     Assert.NotNull(p);
     Assert.Equal("P", p!.Name);
@@ -119,7 +119,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p10");
-        var comp = scope.For(subject).Add(new PrimaryTestCapability("P")).Build();
+        var comp = scope.Compose(subject).Add(new PrimaryTestCapability("P")).Build();
     var p = comp.GetRequiredPrimaryAs<PrimaryTestCapability>();
     Assert.Equal("P", p.Name);
     }
@@ -129,7 +129,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p11");
-        var comp = scope.For(subject).Add(new TestCapability("Z")).Build();
+        var comp = scope.Compose(subject).Add(new TestCapability("Z")).Build();
         var ex = Assert.Throws<InvalidOperationException>(() => comp.GetRequiredPrimaryAs<PrimaryTestCapability>());
         Assert.Contains("Primary capability of type", ex.Message);
     }
@@ -139,7 +139,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p12");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .Add(new PrimaryTestCapability("First"))
                            .WithPrimary(new AlternatePrimaryCapability("Second"));
         var comp = builder.Build();
@@ -154,7 +154,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p13");
-        var comp = scope.For(subject)
+        var comp = scope.Compose(subject)
                         .Add(new PrimaryTestCapability("First"))
                         .WithPrimary(null)
                         .Build();
@@ -167,7 +167,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p14");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .Add(new PrimaryTestCapability("First"));
         var ex = Assert.Throws<InvalidOperationException>(() => builder.Add(new AlternatePrimaryCapability("Second")));
         Assert.Contains("primary capability is already set", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -178,7 +178,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p15");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .AddAs<IPrimaryCapability>(new PrimaryTestCapability("First"));
         var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<IPrimaryCapability>(new AlternatePrimaryCapability("Second")));
         Assert.Contains("primary capability is already set", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -192,7 +192,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p16");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .Add(new PrimaryTestCapability("First"));
         var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability, ITestContract)>(new TuplePrimaryCapability("Second")));
         Assert.Contains("primary capability is already set", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -203,7 +203,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p17");
-        var builder = scope.For(subject);
+        var builder = scope.Compose(subject);
         var ex = Assert.Throws<InvalidOperationException>(() => builder.AddAs<(IPrimaryCapability, IPrimaryCapability)>(new TuplePrimaryCapability("Both")));
         Assert.Contains("Multiple primary capability contracts", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -213,7 +213,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p18");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .Add(new PrimaryTestCapability("Original"));
 
         // Should silently ignore because a primary implementing PrimaryTestCapability already exists
@@ -229,7 +229,7 @@ public class PrimaryCapabilityTests
     {
         using var scope = NewScope();
         var subject = new StringSubject("p19");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
                            .AddAs<IPrimaryCapability>(new PrimaryTestCapability("Original"));
 
         // Should no-op, not throw, not replace

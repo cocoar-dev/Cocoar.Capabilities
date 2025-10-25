@@ -144,7 +144,7 @@ public class CoreVsRegistryBenchmarks
     {
         var subject = new TestSubject(0, "CoreSubject");
         // Use lightweight scope (registries disabled)
-        var composer = BenchmarkScopes.SharedLightweight.For(subject);
+        var composer = BenchmarkScopes.SharedLightweight.Compose(subject);
         
         for (int c = 0; c < capabilitiesPerSubject; c++)
         {
@@ -157,7 +157,7 @@ public class CoreVsRegistryBenchmarks
 
     private static IComposition CreateRegistryComposition(TestSubject subject, int capabilitiesPerSubject)
     {
-        var composer = BenchmarkScopes.Shared.For(subject);
+        var composer = BenchmarkScopes.Shared.Compose(subject);
         
         for (int c = 0; c < capabilitiesPerSubject; c++)
         {

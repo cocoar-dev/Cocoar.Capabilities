@@ -33,7 +33,7 @@ public class CanonicalizationBenchmarks : IDisposable
         for (int i = 0; i < SubjectCount; i++)
         {
             var subject = _stringSubjects[i];
-            var composer = _stringScope.For(subject);
+            var composer = _stringScope.Compose(subject);
             for (int c = 0; c < CapabilitiesPerSubject; c++) composer.Add(new StringCapability($"C{c}"));
             composer.Build(useRegistry: true);
         }
@@ -45,7 +45,7 @@ public class CanonicalizationBenchmarks : IDisposable
         for (int i = 0; i < SubjectCount; i++)
         {
             var subject = _valueSubjects[i];
-            var composer = _valueScope.For(subject);
+            var composer = _valueScope.Compose(subject);
             for (int c = 0; c < CapabilitiesPerSubject; c++) composer.Add(new ValueCapability($"C{c}"));
             composer.Build(useRegistry: true);
         }

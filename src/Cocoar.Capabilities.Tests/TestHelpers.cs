@@ -33,11 +33,11 @@ public record TestPrimaryCapability(string Id, string Description) : IPrimaryCap
 public record OrderedCapability(int Order, string Name);
 public record HighPriorityCapability(string Name)
 {
-    public int Order => -100;
+    public static int Order => -100;
 }
 public record LowPriorityCapability(string Name)
 {
-    public int Order => 100;
+    public static int Order => 100;
 }
 
 public record OrderedTestCapability(string Name, int Order);

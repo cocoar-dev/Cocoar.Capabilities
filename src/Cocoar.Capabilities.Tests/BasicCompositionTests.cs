@@ -10,7 +10,7 @@ public class BasicCompositionTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("s1");
 
-        var composition = scope.For(subject, useRegistry: false)
+        var composition = scope.Compose(subject, useRegistry: false)
             .Add(new TestCapability("A"))
             .Build(useRegistry: false);
 
@@ -29,7 +29,7 @@ public class BasicCompositionTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("s2");
 
-        var composition = scope.For(subject, useRegistry: true)
+        var composition = scope.Compose(subject, useRegistry: true)
             .Add(new TestCapability("B"))
             .Build(useRegistry: true);
 
@@ -46,7 +46,7 @@ public class BasicCompositionTests
         var subject = new StringSubject("contracts");
         var impl = new MultiContractImplementation("multi", "desc", 42);
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .AddAs<(ITestContract, IAlternateContract)>(impl)
             .Build();
 
@@ -64,7 +64,7 @@ public class BasicCompositionTests
     {
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("prim");
-        var builder = scope.For(subject)
+        var builder = scope.Compose(subject)
             .Add(new PrimaryTestCapability("P1"));
 
         var ex = Assert.Throws<InvalidOperationException>(() => builder.Add(new AlternatePrimaryCapability("P2")));
