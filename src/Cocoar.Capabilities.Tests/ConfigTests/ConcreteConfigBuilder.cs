@@ -6,7 +6,7 @@ public sealed class ConcreteConfigBuilder<T> : ConfigBuilder where T : class
     public Guid Id { get; } = Guid.NewGuid();
     internal ConcreteConfigBuilder(CapabilityScope capabilityScope): base(capabilityScope)
     {
-       capabilityScope.For(this).WithPrimary(
+       capabilityScope.Compose(this).WithPrimary(
             new ConcreteTypePrimary<ConfigBuilder>(typeof(T)));
     }
     

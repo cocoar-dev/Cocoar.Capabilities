@@ -20,7 +20,7 @@ public class AppSettings : IAppSettings
 
 public class ConfigManager
 {
-    public readonly List<ConfigBuilder> _configurations;
+    public List<ConfigBuilder> _configurations { get; }
     private readonly CapabilityScope _capabilityScope = new();
 
     public ConfigManager(Func<ConfigureBuilder, ConfigBuilder[]> configure)

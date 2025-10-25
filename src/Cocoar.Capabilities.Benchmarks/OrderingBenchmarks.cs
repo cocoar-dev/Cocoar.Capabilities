@@ -67,7 +67,7 @@ public class OrderingBenchmarks : IDisposable
     [Benchmark(Description = "Build: Ordered (Already Sorted)")] 
     public IComposition Build_Ordered_AlreadySorted()
     {
-        var composer = _scope.For(new Subject(2, "Sorted"));
+        var composer = _scope.Compose(new Subject(2, "Sorted"));
         for (int i = 0; i < Count; i++)
         {
             composer.Add(new OrderedCap($"C{i}", i));
@@ -78,7 +78,7 @@ public class OrderingBenchmarks : IDisposable
     [Benchmark(Description = "Build: Ordered (Reverse -> Worst Case)")] 
     public IComposition Build_Ordered_Reverse()
     {
-        var composer = _scope.For(new Subject(3, "Reverse"));
+        var composer = _scope.Compose(new Subject(3, "Reverse"));
         for (int i = 0; i < Count; i++)
         {
             composer.Add(new OrderedCap($"C{i}", _reverseOrder[i]));
@@ -89,7 +89,7 @@ public class OrderingBenchmarks : IDisposable
     [Benchmark(Description = "Build: Ordered (Duplicate Priorities)")] 
     public IComposition Build_Ordered_Duplicates()
     {
-        var composer = _scope.For(new Subject(4, "Duplicates"));
+        var composer = _scope.Compose(new Subject(4, "Duplicates"));
         for (int i = 0; i < Count; i++)
         {
             composer.Add(new OrderedCap($"C{i}", _duplicateOrder[i]));
@@ -167,14 +167,14 @@ public class OrderingBenchmarks : IDisposable
 
     private IComposition BuildUnorderedInternal()
     {
-        var composer = _scope.For(new Subject(10, "Unordered"));
+        var composer = _scope.Compose(new Subject(10, "Unordered"));
         for (int i = 0; i < Count; i++) composer.Add(new PlainCap($"C{i}"));
         return composer.Build();
     }
 
     private IComposition BuildOrderedRandomInternal()
     {
-        var composer = _scope.For(new Subject(11, "OrderedRandom"));
+        var composer = _scope.Compose(new Subject(11, "OrderedRandom"));
         for (int i = 0; i < Count; i++) composer.Add(new OrderedCap($"C{i}", _randomOrder[i]));
         return composer.Build();
     }

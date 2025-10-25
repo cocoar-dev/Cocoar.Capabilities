@@ -27,7 +27,7 @@ using var scope = new CapabilityScope();
 var document = new Document("README.md");
 
 // Compose capabilities
-var composition = scope.For(document)
+var composition = scope.Compose(document)
     .Add(new EditCapability())
     .Add(new PrintCapability())
     .Add(new ShareCapability())
@@ -59,7 +59,7 @@ if (printCap != null)
 When you know there's only one capability of a type, use `GetFirstOrDefault` or `TryGetFirst`:
 
 ```csharp
-var composition = scope.For(application)
+var composition = scope.Compose(application)
     .Add(new ConfigurationCapability("appsettings.json"))
     .Add(new LoggingCapability("app.log"))
     .Build();
@@ -108,7 +108,7 @@ if (composition.TryGetLast<ThemeCapability>(out var theme))
 
 ```csharp
 // Add multiple validation capabilities
-var composition = scope.For(formData)
+var composition = scope.Compose(formData)
     .Add(new ValidationCapability("Email", EmailValidator))
     .Add(new ValidationCapability("Phone", PhoneValidator))
     .Add(new ValidationCapability("ZipCode", ZipValidator))
@@ -130,7 +130,7 @@ public record AuditCapability(DateTime LastAudit);
 
 var user = new User("user123");
 
-var composition = scope.For(user)
+var composition = scope.Compose(user)
     .Add(new UserPrimaryCapability("user123", "John Doe"))
     .Add(new AdminCapability("Level2"))
     .Add(new AuditCapability(DateTime.Now))
@@ -155,7 +155,7 @@ Console.WriteLine($"Name: {typedPrimary.Name}");
 
 ```csharp
 // Only one primary capability is allowed
-var composition = scope.For(subject)
+var composition = scope.Compose(subject)
     .Add(new PrimaryCapabilityA("A"));
 
 // This will throw InvalidOperationException
@@ -172,7 +172,7 @@ catch (InvalidOperationException ex)
 ### Replacing Primary Capability via Recomposition
 
 ```csharp
-var initial = scope.For(user)
+var initial = scope.Compose(user)
     .Add(new GuestPrimaryCapability("guest123"))
     .Build();
 
@@ -206,7 +206,7 @@ public class DataProcessor : IValidator, IFormatter
 
 var processor = new DataProcessor();
 
-var composition = scope.For(myObject)
+var composition = scope.Compose(myObject)
     .AddAs<(IValidator, IFormatter)>(processor)
     .Build();
 
@@ -231,7 +231,7 @@ public class DataStore : IReadable, IWritable, ISearchable
 
 var store = new DataStore();
 
-var composition = scope.For(database)
+var composition = scope.Compose(database)
     .AddAs<(IReadable, IWritable, ISearchable)>(store)
     .Build();
 
@@ -247,7 +247,7 @@ var searchers = composition.GetAll<ISearchable>();
 
 ```csharp
 // Lower numbers = higher priority (returned first)
-var composition = scope.For(subject)
+var composition = scope.Compose(subject)
     .Add(new LoggingCapability(), order: 10)
     .Add(new ValidationCapability(), order: 5)
     .Add(new ProcessingCapability(), order: 20)
@@ -264,7 +264,7 @@ var all = composition.GetAll<ICapability>();
 ```csharp
 public record TaskCapability(string Name, int Priority);
 
-var composition = scope.For(taskList)
+var composition = scope.Compose(taskList)
     .Add(new TaskCapability("High Priority", 1), cap => cap.Priority)
     .Add(new TaskCapability("Normal Priority", 5), cap => cap.Priority)
     .Add(new TaskCapability("Low Priority", 10), cap => cap.Priority)
@@ -283,7 +283,7 @@ public record OrderedCapability
     public int ExecutionOrder { get; init; }
 }
 
-var composition = scope.For(pipeline)
+var composition = scope.Compose(pipeline)
     .Add(new OrderedCapability { Name = "Step1", ExecutionOrder = 10 }, 
          cap => cap.ExecutionOrder)
     .Add(new OrderedCapability { Name = "Step2", ExecutionOrder = 5 }, 
@@ -298,7 +298,7 @@ var composition = scope.For(pipeline)
 ### Basic Recomposition
 
 ```csharp
-var initialComposition = scope.For(document)
+var initialComposition = scope.Compose(document)
     .Add(new ReadCapability())
     .Build();
 
@@ -316,7 +316,7 @@ Console.WriteLine(updatedComposition.TotalCapabilityCount); // 3
 ### Conditional Recomposition
 
 ```csharp
-var composition = scope.For(user).Add(new BasicUserCapability()).Build();
+var composition = scope.Compose(user).Add(new BasicUserCapability()).Build();
 
 // Add admin capabilities if user is admin
 if (userIsAdmin)
@@ -339,7 +339,7 @@ if (hasPremiumSubscription)
 ### Recomposition with Ordering Changes
 
 ```csharp
-var initial = scope.For(pipeline)
+var initial = scope.Compose(pipeline)
     .Add(new StepA(), 1)
     .Add(new StepB(), 2)
     .Build();
@@ -365,7 +365,7 @@ var options = new CapabilityScopeOptions
 using var scope = new CapabilityScope(options);
 
 // Build with registry
-var composition = scope.For(document)
+var composition = scope.Compose(document)
     .Add(new EditCapability())
     .Build(); // Automatically registered
 
@@ -408,7 +408,7 @@ var options = new CapabilityScopeOptions { UseComposerRegistry = true };
 using var scope = new CapabilityScope(options);
 
 // Start composing
-var composer = scope.For(document); // Registered automatically
+var composer = scope.Compose(document); // Registered automatically
 
 // Check if a composer is active
 if (scope.Composers.Has(document))
@@ -438,7 +438,7 @@ var options = new CapabilityScopeOptions
 using var scope = new CapabilityScope(options);
 
 // Override: use registry for this specific operation
-var composition = scope.For(subject, useRegistry: true)
+var composition = scope.Compose(subject, useRegistry: true)
     .Add(capability)
     .Build(useRegistry: true);
 
@@ -452,7 +452,7 @@ Console.WriteLine(found != null); // True
 ### Basic Try-Add
 
 ```csharp
-var composition = scope.For(document)
+var composition = scope.Compose(document)
     .Add(new LoggingCapability())
     .TryAdd(new LoggingCapability()) // Won't add duplicate
     .TryAdd(new MetricsCapability())  // Will add (doesn't exist yet)
@@ -465,7 +465,7 @@ Console.WriteLine(composition.GetAll<MetricsCapability>().Count); // 1
 ### Conditional Capability Addition
 
 ```csharp
-var composer = scope.For(user);
+var composer = scope.Compose(user);
 
 // Add base capabilities
 composer.Add(new UserProfileCapability());
@@ -485,7 +485,7 @@ var composition = composer.Build();
 ### Try-Add with Ordering
 
 ```csharp
-var composition = scope.For(pipeline)
+var composition = scope.Compose(pipeline)
     .Add(new StepA(), 10)
     .TryAdd(new StepA(), 5) // Won't add, already exists
     .TryAdd(new StepB(), 20) // Will add
@@ -517,7 +517,7 @@ public record ExporterPlugin(string Name, string Format) : IPlugin
 using var scope = new CapabilityScope();
 var app = new Application();
 
-var composition = scope.For(app)
+var composition = scope.Compose(app)
     .Add(new EditorPlugin("TextEditor"))
     .Add(new EditorPlugin("CodeEditor"))
     .Add(new EditorPlugin("MarkdownEditor"))
@@ -545,7 +545,7 @@ public record Permission(string Resource, string Action);
 
 var user = new User("john@example.com");
 
-var composition = scope.For(user)
+var composition = scope.Compose(user)
     .Add(new UserRole("Admin"))
     .Add(new Permission("Users", "Read"))
     .Add(new Permission("Users", "Write"))
@@ -608,7 +608,7 @@ public record MetricsCollector() : IEventHandler
 // Setup event processing
 var order = new Order("ORD-001");
 
-var composition = scope.For(order)
+var composition = scope.Compose(order)
     .Add(new AuditLogger(), order: 1)
     .Add(new NotificationSender(), order: 2)
     .Add(new MetricsCollector(), order: 3)
@@ -641,7 +641,7 @@ public record BetaFeature(string FeatureName, bool IsEnabled) : IFeature;
 
 var app = new Application();
 
-var composer = scope.For(app);
+var composer = scope.Compose(app);
 
 // Load features from configuration
 var featureConfig = LoadFeatureConfiguration();
@@ -709,7 +709,7 @@ public record PersistenceMiddleware() : IDocumentMiddleware
 // Setup processing pipeline
 var document = new Document("report.pdf");
 
-var composition = scope.For(document)
+var composition = scope.Compose(document)
     .Add(new ValidationMiddleware(), order: 1)
     .Add(new TransformationMiddleware(), order: 2)
     .Add(new PersistenceMiddleware(), order: 3)
@@ -761,7 +761,7 @@ public record PushNotification() : INotificationService
 // User preferences determine notification methods
 var user = new User("user@example.com");
 
-var composer = scope.For(user);
+var composer = scope.Compose(user);
 
 if (preferences.EmailEnabled)
     composer.Add(new EmailNotification());
@@ -783,3 +783,4 @@ async Task NotifyUser(IComposition comp, string message)
 
 await NotifyUser(composition, "Your order has shipped!");
 ```
+

@@ -22,7 +22,7 @@ public class FuncOrderingTests
         var cap3 = new HasOrder { Order = 200 };
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(cap1, c => ((HasOrder)c).Order)
             .Add(cap2, c => ((HasOrder)c).Order)
             .Add(cap3, c => ((HasOrder)c).Order)
@@ -47,7 +47,7 @@ public class FuncOrderingTests
         var cap3 = new HasOrder { Order = 20 };
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .AddAs<object>(cap1, c => ((HasOrder)c).Order)
             .AddAs<object>(cap2, c => ((HasOrder)c).Order)
             .AddAs<object>(cap3, c => ((HasOrder)c).Order)
@@ -70,7 +70,7 @@ public class FuncOrderingTests
         var cap1 = new HasOrder { Order = 5 };
 
         // Act - Only first TryAdd succeeds since type already exists
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .TryAdd(cap1, c => ((HasOrder)c).Order)
             .Build();
 
@@ -89,7 +89,7 @@ public class FuncOrderingTests
         var cap1 = new HasOrder { Order = 40 };
 
         // Act - Only first TryAddAs succeeds since type already exists
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .TryAddAs<object>(cap1, c => ((HasOrder)c).Order)
             .Build();
 
@@ -110,7 +110,7 @@ public class FuncOrderingTests
         var cap3 = new HasOrder { Order = 3 };
 
         // Act - reverse the order
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(cap1, c => -((HasOrder)c).Order)
             .Add(cap2, c => -((HasOrder)c).Order)
             .Add(cap3, c => -((HasOrder)c).Order)

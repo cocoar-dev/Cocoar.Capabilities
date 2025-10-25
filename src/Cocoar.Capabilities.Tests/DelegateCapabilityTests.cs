@@ -17,7 +17,7 @@ public class DelegateCapabilityTests
         Action<string> action3 = msg => messages.Add($"Action3: {msg}");
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(action1)
             .Add(action2)
             .Add(action3)
@@ -50,7 +50,7 @@ public class DelegateCapabilityTests
         Func<int, int> addTen = x => x + 10;
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(double_func)
             .Add(square)
             .Add(addTen)
@@ -85,7 +85,7 @@ public class DelegateCapabilityTests
         Action<int> intAction = num => intMessages.Add(num);
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(stringAction)
             .Add(intAction)
             .Build();
@@ -120,11 +120,11 @@ public class DelegateCapabilityTests
         var subject = new StringSubject("test");
 
         Func<string, int> getLength = s => s.Length;
-        Func<int, string> toString = i => i.ToString();
+        Func<int, string> toString = i => i.ToString(System.Globalization.CultureInfo.InvariantCulture);
         Func<string, string> toUpper = s => s.ToUpper();
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(getLength)
             .Add(toString)
             .Add(toUpper)
@@ -157,7 +157,7 @@ public class DelegateCapabilityTests
         Action<string> action3 = msg => messages.Add($"Third: {msg}");
 
         // Act - Add in non-sequential order but with explicit ordering
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(action2, order: 20)
             .Add(action1, order: 10)
             .Add(action3, order: 30)
@@ -189,7 +189,7 @@ public class DelegateCapabilityTests
         Action<string> action2 = msg => { };
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(action1)
             .Add(action2)
             .Build();
@@ -213,7 +213,7 @@ public class DelegateCapabilityTests
         Func<int, int> second = x => x * 3;
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(first)
             .Add(second)
             .Build();
@@ -238,7 +238,7 @@ public class DelegateCapabilityTests
         Action<string> action = msg => invoked = true;
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .AddAs<Action<string>>(action)
             .Build();
 
@@ -263,7 +263,7 @@ public class DelegateCapabilityTests
         Func<string, string> addPrefix = s => $"PROCESSED: {s}";
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(trim, order: 10)
             .Add(toUpper, order: 20)
             .Add(addPrefix, order: 30)
@@ -296,7 +296,7 @@ public class DelegateCapabilityTests
         Func<string, bool> hasMaxLength = s => s.Length <= 10;
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(notEmpty)
             .Add(hasMinLength)
             .Add(hasMaxLength)
@@ -327,7 +327,7 @@ public class DelegateCapabilityTests
         Action<string> action = msg => counter++;
 
         // Act
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(action)
             .TryAdd(action) // Should not add duplicate
             .Build();

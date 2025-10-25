@@ -18,7 +18,7 @@ public class SubjectKeyCanonicalizerTests
         using var scope = new CapabilityScope();
         var s1 = new string("alpha".ToCharArray());
         var s2 = new string("alpha".ToCharArray());
-        var comp1 = scope.For(s1).Add(new Cap("A")).Build(useRegistry: true);
+        var comp1 = scope.Compose(s1).Add(new Cap("A")).Build(useRegistry: true);
         var comp2 = scope.Compositions.GetRequired(s2);
         Assert.Same(comp1, comp2); // value semantics
     }
@@ -32,7 +32,7 @@ public class SubjectKeyCanonicalizerTests
         };
         using var scope = new CapabilityScope(opts);
         var lower = "mixedCase";
-        scope.For(lower).Build(useRegistry: true); // triggers sealing & canonicalization
+        scope.Compose(lower).Build(useRegistry: true); // triggers sealing & canonicalization
 
         // Reflection: fetch _sharedRegistry._canonicalizer and attempt TryRegisterOverride => false
         var scopeType = typeof(CapabilityScope);

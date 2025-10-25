@@ -13,7 +13,7 @@ public class StringSubjectValueSemanticsTests
         var s1 = new string("badword".ToCharArray()); // force new instance
         var s2 = new string("badword".ToCharArray()); // different instance, same contents
 
-        var comp = scope.For(s1, useRegistry: true)
+        var comp = scope.Compose(s1, useRegistry: true)
             .Add(new StringCapability("X"))
             .Build(useRegistry: true);
 
@@ -28,7 +28,7 @@ public class StringSubjectValueSemanticsTests
         var s1 = new string("topic".ToCharArray());
         var s2 = new string("topic".ToCharArray());
 
-        scope.For(s1, useRegistry: true)
+        scope.Compose(s1, useRegistry: true)
             .Add(new StringCapability("T"))
             .Build(useRegistry: true);
 

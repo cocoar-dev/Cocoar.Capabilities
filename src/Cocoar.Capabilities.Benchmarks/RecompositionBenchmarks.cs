@@ -19,7 +19,7 @@ public class RecompositionBenchmarks : IDisposable
     {
         _scope = new CapabilityScope();
         _subject = new TestSubject(1, "RecomposeSubject");
-        var composer = _scope.For(_subject);
+        var composer = _scope.Compose(_subject);
         for (int i = 0; i < 50; i++) composer.Add(new Cap($"C{i}"));
         composer.WithPrimary(new Primary("P0"));
         _baseComposition = composer.Build(useRegistry: true);

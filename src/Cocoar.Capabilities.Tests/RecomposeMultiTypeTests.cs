@@ -16,7 +16,7 @@ public class RecomposeMultiTypeTests
         var subject = new TestSubject(1);
         
         // Register capabilities under multiple types with explicit order
-        var composer = scope.For(subject);
+        var composer = scope.Compose(subject);
         composer.AddAs<(IMyInterface, LoggingCap)>(new LoggingCap(10), order: 10);
         composer.AddAs<(IMyInterface, DatabaseCap)>(new DatabaseCap(5), order: 5);
         composer.AddAs<(IMyInterface, LoggingCap)>(new LoggingCap(1), order: 1);

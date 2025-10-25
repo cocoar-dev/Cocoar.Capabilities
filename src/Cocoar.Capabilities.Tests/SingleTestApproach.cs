@@ -24,7 +24,7 @@ public sealed class SingleTestApproach : IDisposable
         var subject = new StringSubject("test");
 
         // Act: Build with explicit override to enable composition registry
-        var composition = _scope.For(subject)
+        var composition = _scope.Compose(subject)
             .Build(useRegistry: true);
 
         // Assert: Composition should be findable in registry

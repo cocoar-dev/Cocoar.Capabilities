@@ -8,6 +8,7 @@
     <!-- Relax analyzer rules for tests -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningLevel>3</WarningLevel>
+    <NoWarn>$(NoWarn);CA1001;CA1051</NoWarn>
   </PropertyGroup>
 
   <!-- ===== TEST FRAMEWORK ===== -->

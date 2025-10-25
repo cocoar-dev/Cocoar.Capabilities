@@ -22,7 +22,7 @@ public sealed class CustomStringMapperTests
             SubjectKeyMappers = new[] { new CaseInsensitiveStringMapper() }
         });
 
-        var composer = scope.For(" hello ")
+        var composer = scope.Compose(" hello ")
             .Add(new SimpleCapability())
             .Build();
 
@@ -42,7 +42,7 @@ public sealed class CustomStringMapperTests
             SubjectKeyMappers = new ISubjectKeyMapper[] { first, second }
         });
 
-        var composer = scope.For("a")
+        var composer = scope.Compose("a")
             .Add(new SimpleCapability())
             .Build();
 

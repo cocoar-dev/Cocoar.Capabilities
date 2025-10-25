@@ -13,7 +13,7 @@ public class GetLastTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var result = composition.GetLastOrDefault<TestCapability>();
 
@@ -27,7 +27,7 @@ public class GetLastTests
         var subject = new StringSubject("test");
 
         var capability = new TestCapability("only");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(capability)
             .Build();
 
@@ -46,7 +46,7 @@ public class GetLastTests
         var second = new TestCapability("second");
         var third = new TestCapability("third");
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(first)
             .Add(second)
             .Add(third)
@@ -67,7 +67,7 @@ public class GetLastTests
         var testCap = new TestCapability("test");
         var otherCap = new OtherCapability(42);
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(testCap)
             .Add(otherCap)
             .Build();
@@ -84,7 +84,7 @@ public class GetLastTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var ex = Assert.Throws<InvalidOperationException>(
             () => composition.GetRequiredLast<TestCapability>());
@@ -100,7 +100,7 @@ public class GetLastTests
         var subject = new StringSubject("test");
 
         var capability = new TestCapability("only");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(capability)
             .Build();
 
@@ -119,7 +119,7 @@ public class GetLastTests
         var second = new TestCapability("second");
         var third = new TestCapability("third");
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(first)
             .Add(second)
             .Add(third)
@@ -140,7 +140,7 @@ public class GetLastTests
         var testCap = new TestCapability("test");
         var otherCap = new OtherCapability(42);
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(testCap)
             .Add(otherCap)
             .Build();
@@ -157,7 +157,7 @@ public class GetLastTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var result = composition.TryGetLast<TestCapability>(out var capability);
 
@@ -172,7 +172,7 @@ public class GetLastTests
         var subject = new StringSubject("test");
 
         var expected = new TestCapability("only");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(expected)
             .Build();
 
@@ -192,7 +192,7 @@ public class GetLastTests
         var second = new TestCapability("second");
         var third = new TestCapability("third");
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(first)
             .Add(second)
             .Add(third)
@@ -214,7 +214,7 @@ public class GetLastTests
         var testCap = new TestCapability("test");
         var otherCap = new OtherCapability(42);
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(testCap)
             .Add(otherCap)
             .Build();
@@ -236,7 +236,7 @@ public class GetLastTests
         var medium = new TestCapability("medium-priority");
         var high = new TestCapability("high-priority");
         
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(medium, order: 5)
             .Add(high, order: 10)
             .Add(low, order: 1)

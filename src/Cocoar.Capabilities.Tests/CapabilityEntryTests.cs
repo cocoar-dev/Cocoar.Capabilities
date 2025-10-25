@@ -13,7 +13,7 @@ public class CapabilityEntryTests
     {
         using var scope = new CapabilityScope();
         var subject = new Subject(1);
-        var comp = scope.For(subject).Add(new Cap("A")).WithPrimary(new Primary("P"))
+        var comp = scope.Compose(subject).Add(new Cap("A")).WithPrimary(new Primary("P"))
             .Build(useRegistry: true);
 
         // Use object-based registry path (exercises CapabilityEntry.TryGetComposition(object&))
@@ -43,7 +43,7 @@ public class CapabilityEntryTests
     {
         var scope = new CapabilityScope();
         var subject = new Subject(5);
-        var composer = scope.For(subject).Add(new Cap("A"));
+        var composer = scope.Compose(subject).Add(new Cap("A"));
         var comp = composer.Build(useRegistry: true);
         // Recompose so registry entry transitions (ensures entry holds composition after composer removal/transition lifecycle)
         var recomposer = scope.Recompose(comp);

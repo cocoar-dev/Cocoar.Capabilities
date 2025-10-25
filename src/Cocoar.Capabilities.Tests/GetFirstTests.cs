@@ -10,7 +10,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var result = composition.GetFirstOrDefault<TestCapability>();
 
@@ -24,7 +24,7 @@ public class GetFirstTests
         var subject = new StringSubject("test");
 
         var capability = new TestCapability("First");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(capability)
             .Build();
 
@@ -41,7 +41,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("Third"), order: 30)
             .Add(new TestCapability("First"), order: 10)
             .Add(new TestCapability("Second"), order: 20)
@@ -59,7 +59,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var found = composition.TryGetFirst<TestCapability>(out var result);
 
@@ -74,7 +74,7 @@ public class GetFirstTests
         var subject = new StringSubject("test");
 
         var capability = new TestCapability("Only");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(capability)
             .Build();
 
@@ -92,7 +92,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("C"), order: 3)
             .Add(new TestCapability("A"), order: 1)
             .Add(new TestCapability("B"), order: 2)
@@ -111,7 +111,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("TestCap"))
             .Add(new DocumentCapability("DocType", "Content"))
             .Build();
@@ -136,7 +136,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(options);
         var subject = new StringSubject("registry-test");
 
-        var composition = scope.For(subject, useRegistry: true)
+        var composition = scope.Compose(subject, useRegistry: true)
             .Add(new TestCapability("First"))
             .Add(new TestCapability("Second"))
             .Build(useRegistry: true);
@@ -156,7 +156,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("FirstAdded"))
             .Add(new TestCapability("SecondAdded"))
             .Add(new TestCapability("ThirdAdded"))
@@ -174,7 +174,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject).Build();
+        var composition = scope.Compose(subject).Build();
 
         var ex = Assert.Throws<InvalidOperationException>(() => 
             composition.GetRequiredFirst<TestCapability>());
@@ -189,7 +189,7 @@ public class GetFirstTests
         var subject = new StringSubject("test");
 
         var capability = new TestCapability("Required");
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(capability)
             .Build();
 
@@ -206,7 +206,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("Z"), order: 30)
             .Add(new TestCapability("A"), order: 10)
             .Add(new TestCapability("M"), order: 20)
@@ -224,7 +224,7 @@ public class GetFirstTests
         using var scope = new CapabilityScope(TestOptions.Disabled);
         var subject = new StringSubject("test");
 
-        var composition = scope.For(subject)
+        var composition = scope.Compose(subject)
             .Add(new TestCapability("TestCap"))
             .Add(new DocumentCapability("DocType", "Content"))
             .Build();

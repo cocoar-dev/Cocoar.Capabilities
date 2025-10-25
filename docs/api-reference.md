@@ -6,6 +6,8 @@ Complete API reference for the Cocoar.Capabilities library.
 
 - [CapabilityScope](#capabilityscope)
 - [CapabilityScopeOptions](#capabilityscopeoptions)
+- [ScopeOwnerApi](#scopeownerapi)
+- [ScopeAnchorsApi](#scopeanchorsapi)
 - [Composer](#composer)
 - [IComposition](#icomposition)
 - [IPrimaryCapability](#iprimarycapability)
@@ -38,12 +40,14 @@ Entry point for all capability operations. Manages the lifecycle of composers an
 |----------|------|-------------|
 | `Composers` | `ComposerRegistryApi` | Provides access to the composer registry |
 | `Compositions` | `CompositionRegistryApi` | Provides access to the composition registry |
+| `Owner` | `ScopeOwnerApi` | Provides access to owner management operations |
+| `Anchors` | `ScopeAnchorsApi` | Provides access to anchor management operations |
 
 ### Example
 
 ```csharp
 using var scope = new CapabilityScope();
-var composer = scope.For(myObject);
+var composer = scope.Compose(myObject);
 var composition = composer.Add(new MyCapability()).Build();
 ```
 
@@ -75,6 +79,144 @@ var options = new CapabilityScopeOptions
 };
 ```
 
+---
+
+## ScopeOwnerApi
+
+Provides scope ownership management operations. Owners are single-valued context objects associated with a scope (e.g., user, request, pipeline). Each scope can have at most one owner.
+
+Access via `scope.Owner.*`
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Scope` | `CapabilityScope` | Returns the associated scope (for fluent chaining back to scope) |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Set(object owner)` | `ScopeOwnerApi` | Sets the owner for the scope (throws if already set) |
+| `Replace(object owner)` | `ScopeOwnerApi` | Replaces the existing owner with a new one (throws if not set) |
+| `Get()` | `object?` | Gets the owner, or null if not set |
+| `GetOrThrow()` | `object` | Gets the owner, throws if not set (alias: `Require()`) |
+| `TryGet(out object owner)` | `bool` | Tries to get the owner, returns true if successful |
+| `Compose(Action<Composer> composerSetup)` | `IComposition` | Creates a composition for the owner (throws if not set) |
+| `GetComposition()` | `IComposition?` | Gets the existing composition for the owner, or null |
+
+### Exceptions
+
+| Method | Exception | Condition |
+|--------|-----------|-----------|
+| All methods | `ObjectDisposedException` | If scope is disposed |
+| `Set` | `InvalidOperationException` | If owner is already set |
+| `Replace` | `InvalidOperationException` | If owner is not set |
+| `GetOrThrow` | `InvalidOperationException` | If owner is not set |
+| `Compose` | `InvalidOperationException` | If owner is not set |
+
+### Example
+
+```csharp
+using var scope = new CapabilityScope();
+
+// Set owner once
+scope.Owner.Set(currentUser);
+
+// Get owner (various patterns)
+var owner = scope.Owner.Get();
+var requiredOwner = scope.Owner.GetOrThrow();
+if (scope.Owner.TryGet(out var o)) { /* use o */ }
+
+// Replace owner (runtime replacement scenario)
+scope.Owner.Replace(newUser);
+
+// Compose capabilities for owner
+var composition = scope.Owner.Compose(c => c
+    .Add(new UserPermissions())
+    .Add(new AuditLog()));
+
+// Fluent chaining back to scope
+scope.Owner.Set(currentUser).Scope.Anchors.Set<ILogger>(logger);
+```
+
+---
+
+## ScopeAnchorsApi
+
+Provides scope anchor management operations. Anchors are keyed context objects associated with a scope (e.g., logger, configuration, pipeline). Use typed anchors for compile-time safety or named anchors for string keys.
+
+Access via `scope.Anchors.*`
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Scope` | `CapabilityScope` | Returns the associated scope (for fluent chaining back to scope) |
+
+### Methods - Typed Anchors
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Set<T>(T anchor)` | `ScopeAnchorsApi` | Sets a typed anchor (throws if already set) |
+| `Get<T>()` | `T?` | Gets a typed anchor, or null/default if not set |
+| `GetOrThrow<T>()` | `T` | Gets a typed anchor, throws if not set (alias: `Require<T>()`) |
+| `TryGet<T>(out T anchor)` | `bool` | Tries to get a typed anchor, returns true if successful |
+| `Compose<T>(Action<Composer> composerSetup)` | `IComposition` | Creates a composition for a typed anchor (throws if not set) |
+| `GetComposition<T>()` | `IComposition?` | Gets the existing composition for a typed anchor, or null |
+
+### Methods - Named Anchors
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Set(string name, object anchor)` | `ScopeAnchorsApi` | Sets a named anchor (throws if already set) |
+| `Get(string name)` | `object?` | Gets a named anchor, or null if not set |
+| `GetOrThrow(string name)` | `object` | Gets a named anchor, throws if not set (alias: `Require(string)`) |
+| `TryGet(string name, out object anchor)` | `bool` | Tries to get a named anchor, returns true if successful |
+| `Compose(string name, Action<Composer> composerSetup)` | `IComposition` | Creates a composition for a named anchor (throws if not set) |
+| `GetComposition(string name)` | `IComposition?` | Gets the existing composition for a named anchor, or null |
+
+### Exceptions
+
+| Method | Exception | Condition |
+|--------|-----------|-----------|
+| All methods | `ObjectDisposedException` | If scope is disposed |
+| `Set<T>` / `Set(name, ...)` | `InvalidOperationException` | If anchor is already set |
+| `GetOrThrow<T>` / `GetOrThrow(name)` | `InvalidOperationException` | If anchor is not set |
+| `Compose<T>` / `Compose(name, ...)` | `InvalidOperationException` | If anchor is not set |
+
+### Example
+
+```csharp
+using var scope = new CapabilityScope();
+
+// Typed anchors (compile-time safety)
+scope.Anchors.Set<ILogger>(logger);
+scope.Anchors.Set<IConfiguration>(config);
+
+var log = scope.Anchors.Get<ILogger>();
+var requiredConfig = scope.Anchors.GetOrThrow<IConfiguration>();
+
+// Named anchors (runtime flexibility)
+scope.Anchors.Set("current-pipeline", pipeline1);
+scope.Anchors.Set("previous-pipeline", pipeline0);
+
+if (scope.Anchors.TryGet("current-pipeline", out var p))
+{
+    // use p
+}
+
+// Compose capabilities for anchors
+var composition = scope.Anchors.Compose<ILogger>(c => c
+    .Add(new LogFormatter())
+    .Add(new LogFilter()));
+
+// Fluent chaining
+scope.Anchors
+    .Set<ILogger>(logger)
+    .Set<IConfiguration>(config)
+    .Scope.Owner.Set(currentUser);
+```
 
 ---
 
@@ -113,7 +255,7 @@ Fluent builder for creating capability compositions.
 ### Example
 
 ```csharp
-var composition = scope.For(subject)
+var composition = scope.Compose(subject)
     .Add(new Capability1(), order: 10)
     .Add(new Capability2(), order: 5)
     .AddAs<(IContract1, IContract2)>(new MultiContract())
@@ -228,7 +370,7 @@ public record UserPrimaryCapability(string UserId, string Name) : IPrimaryCapabi
 public record DocumentPrimaryCapability(string Id, string Title) : IPrimaryCapability;
 
 // Use in composition
-var composition = scope.For(user)
+var composition = scope.Compose(user)
     .Add(new UserPrimaryCapability("user123", "John Doe"))
     .Add(new AdminCapability()) // Non-primary, OK
     .Build();
@@ -334,7 +476,7 @@ public class DocumentBuilder
 
     public DocumentBuilder(CapabilityScope scope, object subject)
     {
-        _composer = scope.For(subject);
+        _composer = scope.Compose(subject);
     }
 
     public DocumentBuilder WithEditing() 
@@ -351,7 +493,7 @@ public class DocumentBuilder
 
 ```csharp
 // Add strategies as capabilities, execute in order
-var composition = scope.For(processor)
+var composition = scope.Compose(processor)
     .Add(new ValidationStrategy(), order: 1)
     .Add(new TransformationStrategy(), order: 2)
     .Add(new PersistenceStrategy(), order: 3)
@@ -366,7 +508,7 @@ foreach (var strategy in composition.GetAll<IStrategy>())
 ### Chain of Responsibility
 
 ```csharp
-var composition = scope.For(request)
+var composition = scope.Compose(request)
     .Add(new AuthenticationHandler(), order: 1)
     .Add(new AuthorizationHandler(), order: 2)
     .Add(new ValidationHandler(), order: 3)
@@ -386,9 +528,10 @@ foreach (var handler in composition.GetAll<IRequestHandler>())
 
 ```csharp
 // Layer capabilities as decorators
-var composition = scope.For(service)
+var composition = scope.Compose(service)
     .Add(new LoggingDecorator(), order: 1)
     .Add(new CachingDecorator(), order: 2)
     .Add(new ValidationDecorator(), order: 3)
     .Build();
 ```
+
