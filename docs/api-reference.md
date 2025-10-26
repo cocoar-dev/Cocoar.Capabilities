@@ -10,6 +10,7 @@ Complete API reference for the Cocoar.Capabilities library.
 - [ScopeAnchorsApi](#scopeanchorsapi)
 - [Composer](#composer)
 - [IComposition](#icomposition)
+- [Using Extensions](#using-extensions)
 - [IPrimaryCapability](#iprimarycapability)
 - [ComposerRegistryApi](#composerregistryapi)
 - [CompositionRegistryApi](#compositionregistryapi)
@@ -341,6 +342,145 @@ if (composition.TryGetPrimary(out var primary))
 // Type-safe primary access
 var userPrimary = composition.GetRequiredPrimaryAs<UserPrimaryCapability>();
 ```
+
+---
+
+## Using Extensions
+
+Fluent extension methods for inline capability usage. These are convenience wrappers over the `Get*` methods that enable chainable, expressive usage patterns.
+
+**Extension methods on `IComposition`**
+
+### Single Instance Methods (First)
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `UsingFirst<T>(Action<T> use)` | `IComposition` | Uses the first T capability; throws if none exist. Chainable. |
+| `UsingFirst<T, TResult>(Func<T, TResult> use)` | `TResult` | Uses the first T capability and returns a result; throws if none exist |
+| `UsingFirstOrDefault<T>(Action<T> use)` | `IComposition` | Uses the first T capability if it exists; silent if missing. Chainable. |
+
+### Single Instance Methods (Last)
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `UsingLast<T>(Action<T> use)` | `IComposition` | Uses the last T capability; throws if none exist. Chainable. |
+| `UsingLast<T, TResult>(Func<T, TResult> use)` | `TResult` | Uses the last T capability and returns a result; throws if none exist |
+| `UsingLastOrDefault<T>(Action<T> use)` | `IComposition` | Uses the last T capability if it exists; silent if missing. Chainable. |
+
+### Multiple Instance Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `UsingEach<T>(Action<T> use)` | `IComposition` | Executes action for each T capability; silent if none exist. Chainable. |
+| `UsingEach<T, TResult>(Func<T, TResult> use)` | `IReadOnlyList<TResult>` | Executes function for each T capability and collects results |
+| `UsingAll<T>(Action<IReadOnlyList<T>> use)` | `IComposition` | Executes action with full collection of T capabilities. Chainable. |
+| `UsingAll<T, TResult>(Func<IReadOnlyList<T>, TResult> use)` | `TResult` | Executes function with full collection and returns a result |
+
+### Delegation Mapping
+
+All `Using*` methods delegate directly to existing `IComposition` methods:
+
+| `Using*` Method | Delegates To |
+|----------------|--------------|
+| `UsingFirst<T>()` | `GetRequiredFirst<T>()` |
+| `UsingFirstOrDefault<T>()` | `GetFirstOrDefault<T>()` |
+| `UsingLast<T>()` | `GetRequiredLast<T>()` |
+| `UsingLastOrDefault<T>()` | `GetLastOrDefault<T>()` |
+| `UsingEach<T>()` / `UsingAll<T>()` | `GetAll<T>()` |
+
+### Examples
+
+**Single instance usage:**
+
+```csharp
+// Required first (throws if missing)
+composition.UsingFirst<ILogger>(log => log.Info("started"));
+
+// Required first with result
+var count = composition.UsingFirst<IRepository, int>(repo => repo.Count());
+
+// Optional (silent if missing)
+composition.UsingFirstOrDefault<ILogger>(log => log.Info("started"));
+
+// Last instance (when order matters)
+composition.UsingLast<IMiddleware>(m => m.Execute());
+```
+
+**Multiple instance usage:**
+
+```csharp
+// Process each capability individually
+composition.UsingEach<IEventHandler>(handler => handler.Handle(evt));
+
+// Map each to a result
+var counts = composition.UsingEach<IRepository, int>(repo => repo.Count());
+// Returns: [5, 12, 8]
+
+// Aggregate operation on collection
+var total = composition.UsingAll<IRepository, int>(
+    repos => repos.Sum(r => r.Count())
+);
+// Returns: 25
+
+// Collection operation (chainable)
+composition.UsingAll<IPlugin>(plugins => 
+{
+    foreach (var p in plugins)
+        p.Initialize();
+});
+```
+
+**Fluent chaining:**
+
+```csharp
+composition
+    .UsingFirst<ILogger>(log => log.Info("starting"))
+    .UsingEach<IPlugin>(p => p.Initialize())
+    .UsingFirstOrDefault<IOptionalFeature>(f => f.Configure())
+    .UsingAll<IEventHandler>(handlers => 
+    {
+        foreach (var h in handlers)
+            h.Register();
+    })
+    .UsingLast<IMetrics>(m => m.Inc("startup"));
+```
+
+**When to use `Using*` vs `Get*`:**
+
+```csharp
+// Use Get* when you need to store/reuse the instance
+var logger = composition.GetRequiredFirst<ILogger>();
+logger.Info("step 1");
+logger.Info("step 2");
+
+// Use Using* for inline/one-off usage
+composition.UsingFirst<ILogger>(log => log.Info("one-off message"));
+
+// Use Using* for fluent chaining
+composition
+    .UsingFirst<ILogger>(log => log.Info("starting"))
+    .UsingEach<IValidator>(v => v.Validate());
+```
+
+### Exception Behavior
+
+| Method | Behavior |
+|--------|----------|
+| `UsingFirst<T>()` / `UsingLast<T>()` | Throws if no instances exist |
+| `UsingFirstOrDefault<T>()` / `UsingLastOrDefault<T>()` | Silent if missing (no-op) |
+| `UsingEach<T>()` / `UsingAll<T>()` | Silent if collection is empty |
+
+### Thread Safety
+
+- ✅ All `Using*` methods are thread-safe (they operate on immutable `IComposition` instances)
+- ✅ User-provided delegates may execute concurrently if the composition is shared across threads
+- ⚠️ User code inside delegates is responsible for its own thread safety
+
+### Performance
+
+- **Zero allocation overhead** beyond the user delegate itself
+- Direct delegation to existing `Get*` methods (no intermediate objects)
+- Chainable methods return the same `IComposition` instance (no copying)
 
 ---
 
