@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-10-26
+
 ### Added
 - **Owner and Anchors API**: Associate scopes with context objects
   - `scope.Owner.*` API for managing a single distinguished owner
