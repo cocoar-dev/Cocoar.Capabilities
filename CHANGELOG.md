@@ -12,6 +12,14 @@
   - Direct composition via `Owner.Compose()` and `Anchors.Compose<T>()`
   - Methods: `Set`, `Replace`, `Get`, `GetOrThrow`, `TryGet`, `Compose`, `GetComposition`
   - Comprehensive documentation in ADR, README, API reference, and quick reference guide
+- **Using* Extension Methods**: Fluent convenience methods for inline capability usage
+  - `UsingFirst<T>()`, `UsingFirstOrDefault<T>()` - Use first capability with action or function
+  - `UsingLast<T>()`, `UsingLastOrDefault<T>()` - Use last capability with action or function
+  - `UsingEach<T>()` - Execute action or function for each capability
+  - `UsingAll<T>()` - Execute action or function with full collection
+  - All methods maintain semantic consistency with existing `Get*` methods
+  - Action-based overloads return `IComposition` for chaining
+  - Function-based overloads return results directly
 
 ## [1.0.0] - 2025-10-10
 
