@@ -12,6 +12,11 @@ This document provides detailed examples and use cases for the Cocoar.Capabiliti
 - [Registry Management](#registry-management)
 - [Try-Add Pattern](#try-add-pattern)
 - [Real-World Use Cases](#real-world-use-cases)
+  - [Plugin Architecture](#plugin-architecture)
+  - [Role-Based Access Control](#role-based-access-control)
+  - [Event Processing Pipeline](#event-processing-pipeline)
+  - [Strongly-Typed Scopes](#strongly-typed-scopes)
+  - [Domain-Specific Typed Scopes](#domain-specific-typed-scopes)
 
 ## Basic Examples
 
@@ -782,5 +787,115 @@ async Task NotifyUser(IComposition comp, string message)
 }
 
 await NotifyUser(composition, "Your order has shipped!");
+```
+
+### Strongly-Typed Scopes
+
+Use `CapabilityScope<TOwner>` when you want compile-time type safety for the owner:
+
+```csharp
+public class ConfigurationManager
+{
+    public Dictionary<string, string> Settings { get; } = new();
+}
+
+public record ConfigCapability(string Key, string Value);
+
+// Create a typed scope - owner is set at construction and immutable
+var configManager = new ConfigurationManager();
+using var scope = new CapabilityScope<ConfigurationManager>(configManager);
+
+// No generic parameters needed - type is known!
+var owner = scope.Owner.Get();  // Returns ConfigurationManager directly
+owner.Settings["AppName"] = "MyApp";
+
+// Compose capabilities for the owner
+scope.Owner.Compose()
+    .Add(new ConfigCapability("LogLevel", "Debug"))
+    .Add(new ConfigCapability("Timeout", "30"))
+    .Build();
+
+// Retrieve composition
+if (scope.Owner.TryGetComposition(out var composition))
+{
+    var configs = composition.GetAll<ConfigCapability>();
+    foreach (var config in configs)
+    {
+        Console.WriteLine($"{config.Key} = {config.Value}");
+    }
+}
+
+// With options
+var options = new CapabilityScopeOptions
+{
+    UseComposerRegistry = true,
+    UseCompositionRegistry = true
+};
+using var typedScope = new CapabilityScope<ConfigurationManager>(configManager, options);
+```
+
+### Domain-Specific Typed Scopes
+
+Create custom scope classes for your domain:
+
+```csharp
+public class PipelineHost
+{
+    public string Name { get; set; }
+    public DateTime StartTime { get; set; }
+}
+
+public record StepCapability(string StepName, int Order);
+public record MetricsCapability(string MetricName, double Value);
+
+// Create a domain-specific scope type
+public class PipelineScope : CapabilityScope<PipelineHost>
+{
+    public PipelineScope(PipelineHost host) : base(host) { }
+    
+    public PipelineScope(PipelineHost host, CapabilityScopeOptions options) 
+        : base(host, options) { }
+    
+    // Add domain-specific helper methods
+    public void AddStep(string stepName, int order)
+    {
+        Owner.Compose()
+            .Add(new StepCapability(stepName, order))
+            .Build();
+    }
+    
+    public IEnumerable<StepCapability> GetSteps()
+    {
+        if (Owner.TryGetComposition(out var comp))
+        {
+            return comp.GetAll<StepCapability>().OrderBy(s => s.Order);
+        }
+        return Enumerable.Empty<StepCapability>();
+    }
+}
+
+// Usage
+var pipeline = new PipelineHost 
+{ 
+    Name = "DataProcessing", 
+    StartTime = DateTime.UtcNow 
+};
+
+using var pipelineScope = new PipelineScope(pipeline);
+
+// Use domain-specific methods
+pipelineScope.AddStep("Validate", 1);
+pipelineScope.AddStep("Transform", 2);
+pipelineScope.AddStep("Load", 3);
+
+var steps = pipelineScope.GetSteps();
+foreach (var step in steps)
+{
+    Console.WriteLine($"Step {step.Order}: {step.StepName}");
+}
+
+// Access the strongly-typed owner
+var host = pipelineScope.Owner.Get();
+Console.WriteLine($"Pipeline: {host.Name}");
 ```
 
