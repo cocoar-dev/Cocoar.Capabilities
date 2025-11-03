@@ -57,7 +57,7 @@ public class OwnerAndAnchorExampleTests
         // Later, with only scope available, compose capabilities for different subjects
 
         // Add diagnostics to the pipeline itself
-        scope.Owner.Compose<PipelineHost>()
+        scope.Owner.ComposeFor<PipelineHost>()
              .Add(new DiagnosticsCapability(true))
              .Build();
 
@@ -137,7 +137,7 @@ public class OwnerAndAnchorExampleTests
              .Set("secondary-tenant", tenant2);
 
         // Compose for primary tenant (owner)
-        scope.Owner.Compose<TenantContext>()
+        scope.Owner.ComposeFor<TenantContext>()
              .Add(new TenantCapability("acme-corp"))
              .Build();
 

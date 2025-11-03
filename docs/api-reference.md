@@ -5,8 +5,10 @@ Complete API reference for the Cocoar.Capabilities library.
 ## Table of Contents
 
 - [CapabilityScope](#capabilityscope)
+- [CapabilityScope&lt;TOwner&gt;](#capabilityscopetowner)
 - [CapabilityScopeOptions](#capabilityscopeoptions)
 - [ScopeOwnerApi](#scopeownerapi)
+- [ScopeOwnerApi&lt;TOwner&gt;](#scopeownerapitowner)
 - [ScopeAnchorsApi](#scopeanchorsapi)
 - [Composer](#composer)
 - [IComposition](#icomposition)
@@ -50,6 +52,58 @@ Entry point for all capability operations. Manages the lifecycle of composers an
 using var scope = new CapabilityScope();
 var composer = scope.Compose(myObject);
 var composition = composer.Add(new MyCapability()).Build();
+```
+
+---
+
+## CapabilityScope&lt;TOwner&gt;
+
+A capability scope with a strongly-typed owner. The owner is immutable and set at construction time, providing compile-time type safety for all owner operations.
+
+### Constructors
+
+| Constructor | Description |
+|------------|-------------|
+| `CapabilityScope(TOwner owner)` | Creates a new typed scope with the specified owner |
+| `CapabilityScope(TOwner owner, CapabilityScopeOptions? options)` | Creates a new typed scope with the specified owner and options |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Owner` | `ScopeOwnerApi<TOwner>` | Provides access to strongly-typed owner operations |
+| `Composers` | `ComposerRegistryApi` | Provides access to the composer registry (inherited) |
+| `Compositions` | `CompositionRegistryApi` | Provides access to the composition registry (inherited) |
+| `Anchors` | `ScopeAnchorsApi` | Provides access to anchor management operations (inherited) |
+
+### Example
+
+```csharp
+// Create a typed scope with owner
+var configManager = new ConfigurationManager();
+using var scope = new CapabilityScope<ConfigurationManager>(configManager);
+
+// Owner methods are strongly typed - no generic parameter needed!
+var owner = scope.Owner.Get();  // Returns ConfigurationManager directly
+var composer = scope.Owner.Compose();  // Composes for the owner
+
+// With options
+var options = new CapabilityScopeOptions { UseComposerRegistry = true };
+using var typedScope = new CapabilityScope<ConfigManager>(config, options);
+
+// Can be used as base CapabilityScope
+CapabilityScope baseScope = scope;
+```
+
+### Inheritance
+
+`CapabilityScope<TOwner>` inherits from `CapabilityScope`, so it can be used anywhere a base `CapabilityScope` is expected. This enables patterns like:
+
+```csharp
+public class ConfigManagerScope : CapabilityScope<ConfigManager>
+{
+    public ConfigManagerScope(ConfigManager manager) : base(manager) { }
+}
 ```
 
 ---
@@ -99,12 +153,22 @@ Access via `scope.Owner.*`
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `Set(object owner)` | `ScopeOwnerApi` | Sets the owner for the scope (throws if already set) |
-| `Replace(object owner)` | `ScopeOwnerApi` | Replaces the existing owner with a new one (throws if not set) |
-| `Get()` | `object?` | Gets the owner, or null if not set |
-| `GetOrThrow()` | `object` | Gets the owner, throws if not set (alias: `Require()`) |
-| `TryGet(out object owner)` | `bool` | Tries to get the owner, returns true if successful |
-| `Compose(Action<Composer> composerSetup)` | `IComposition` | Creates a composition for the owner (throws if not set) |
-| `GetComposition()` | `IComposition?` | Gets the existing composition for the owner, or null |
+| `Replace(object owner)` | `ScopeOwnerApi` | Replaces the existing owner with a new one |
+| `Get<T>()` | `T` | Gets the owner cast to type T, throws if not set or wrong type |
+| `GetOrThrow<T>()` | `T` | Alias for `Get<T>()` |
+| `TryGet<T>(out T? owner)` | `bool` | Tries to get the owner as type T, returns true if successful |
+| `Compose(bool? useRegistry = null)` | `Composer` | Creates a composer for the owner |
+| `ComposeFor<T>(bool? useRegistry = null)` | `Composer` | Creates a composer for the owner if it's of type T |
+| `GetComposition()` | `Composition?` | Gets the existing composition for the owner, or null |
+| `TryGetComposition(out Composition? composition)` | `bool` | Tries to get the composition, returns true if found |
+| `GetCompositionFor<T>()` | `Composition?` | Gets the composition if owner is of type T, or null |
+| `GetRequiredComposition()` | `Composition` | Gets the composition, throws if not found |
+| `GetRequiredCompositionFor<T>()` | `Composition` | Gets the composition if owner is type T, throws if not found |
+| `GetComposer()` | `Composer?` | Gets the composer from registry, or null |
+| `TryGetComposer(out Composer? composer)` | `bool` | Tries to get the composer from registry, returns true if found |
+| `GetComposerFor<T>()` | `Composer?` | Gets the composer if owner is of type T, or null |
+| `GetRequiredComposer()` | `Composer` | Gets the composer from registry, throws if not found |
+| `GetRequiredComposerFor<T>()` | `Composer` | Gets the composer if owner is type T, throws if not found |
 
 ### Exceptions
 
@@ -143,6 +207,66 @@ scope.Owner.Set(currentUser).Scope.Anchors.Set<ILogger>(logger);
 
 ---
 
+## ScopeOwnerApi&lt;TOwner&gt;
+
+Provides strongly-typed owner operations for `CapabilityScope<TOwner>`. All methods work with the concrete owner type without needing generic parameters.
+
+Access via `scope.Owner` on a `CapabilityScope<TOwner>` instance.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Scope` | `CapabilityScope` | Returns the associated scope |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Get()` | `TOwner` | Gets the owner (always succeeds since owner is immutable) |
+| `TryGet(out TOwner? owner)` | `bool` | Gets the owner (always returns true) |
+| `Compose(bool? useRegistry = null)` | `Composer` | Creates a composer for the owner |
+| `GetComposition()` | `Composition?` | Gets the existing composition for the owner, or null |
+| `TryGetComposition(out Composition? composition)` | `bool` | Tries to get the composition, returns true if found |
+| `GetRequiredComposition()` | `Composition` | Gets the composition, throws if not found |
+| `GetComposer()` | `Composer?` | Gets the composer from registry, or null |
+| `TryGetComposer(out Composer? composer)` | `bool` | Tries to get the composer from registry, returns true if found |
+| `GetRequiredComposer()` | `Composer` | Gets the composer from registry, throws if not found |
+
+### Exceptions
+
+| Method | Exception | Condition |
+|--------|-----------|-----------|
+| All methods | `ObjectDisposedException` | If scope is disposed |
+| `GetRequiredComposition()` | `InvalidOperationException` | If no composition exists |
+| `GetRequiredComposer()` | `InvalidOperationException` | If no composer in registry |
+
+### Example
+
+```csharp
+var config = new ConfigurationManager();
+using var scope = new CapabilityScope<ConfigurationManager>(config);
+
+// No generic parameter needed!
+var owner = scope.Owner.Get();  // Returns ConfigurationManager
+var composer = scope.Owner.Compose();
+
+// Try-pattern
+if (scope.Owner.TryGetComposition(out var composition))
+{
+    // Use composition
+}
+
+// Build and retrieve
+scope.Owner.Compose()
+    .Add(new ConfigCapability("key", "value"))
+    .Build();
+
+var comp = scope.Owner.GetRequiredComposition();
+```
+
+---
+
 ## ScopeAnchorsApi
 
 Provides scope anchor management operations. Anchors are keyed context objects associated with a scope (e.g., logger, configuration, pipeline). Use typed anchors for compile-time safety or named anchors for string keys.
@@ -163,8 +287,20 @@ Access via `scope.Anchors.*`
 | `Get<T>()` | `T?` | Gets a typed anchor, or null/default if not set |
 | `GetOrThrow<T>()` | `T` | Gets a typed anchor, throws if not set (alias: `Require<T>()`) |
 | `TryGet<T>(out T anchor)` | `bool` | Tries to get a typed anchor, returns true if successful |
-| `Compose<T>(Action<Composer> composerSetup)` | `IComposition` | Creates a composition for a typed anchor (throws if not set) |
-| `GetComposition<T>()` | `IComposition?` | Gets the existing composition for a typed anchor, or null |
+| `ComposeFor<T>(bool? useRegistry = null)` | `Composer` | Creates a composer for a typed anchor (throws if not set) |
+| `GetCompositionFor<T>()` | `Composition?` | Gets the existing composition for a typed anchor, or null |
+| `TryGetCompositionFor<T>(out Composition? composition)` | `bool` | Tries to get composition for typed anchor, returns true if exists |
+| `GetRequiredCompositionFor<T>()` | `Composition` | Gets composition for typed anchor, throws if not found |
+| `GetComposerFor<T>()` | `Composer?` | Gets composer from registry for typed anchor, or null |
+| `TryGetComposerFor<T>(out Composer? composer)` | `bool` | Tries to get composer from registry, returns true if found |
+| `GetRequiredComposerFor<T>()` | `Composer` | Gets composer from registry, throws if not found |
+| `Compose<T>(bool? useRegistry = null)` | `Composer` | **[Obsolete]** Use `ComposeFor<T>()` instead |
+| `GetComposition<T>()` | `Composition?` | **[Obsolete]** Use `GetCompositionFor<T>()` instead |
+| `TryGetComposition<T>(out Composition?)` | `bool` | **[Obsolete]** Use `TryGetCompositionFor<T>()` instead |
+| `GetRequiredComposition<T>()` | `Composition` | **[Obsolete]** Use `GetRequiredCompositionFor<T>()` instead |
+| `GetComposer<T>()` | `Composer?` | **[Obsolete]** Use `GetComposerFor<T>()` instead |
+| `TryGetComposer<T>(out Composer?)` | `bool` | **[Obsolete]** Use `TryGetComposerFor<T>()` instead |
+| `GetRequiredComposer<T>()` | `Composer` | **[Obsolete]** Use `GetRequiredComposerFor<T>()` instead |
 
 ### Methods - Named Anchors
 
@@ -176,6 +312,11 @@ Access via `scope.Anchors.*`
 | `TryGet(string name, out object anchor)` | `bool` | Tries to get a named anchor, returns true if successful |
 | `Compose(string name, Action<Composer> composerSetup)` | `IComposition` | Creates a composition for a named anchor (throws if not set) |
 | `GetComposition(string name)` | `IComposition?` | Gets the existing composition for a named anchor, or null |
+| `TryGetComposition(string name, out Composition? composition)` | `bool` | Tries to get composition for named anchor, returns true if exists |
+| `GetRequiredComposition(string name)` | `Composition` | Gets composition for named anchor, throws if not found |
+| `GetComposer(string name)` | `Composer?` | Gets composer from registry for named anchor, or null |
+| `TryGetComposer(string name, out Composer? composer)` | `bool` | Tries to get composer from registry, returns true if found |
+| `GetRequiredComposer(string name)` | `Composer` | Gets composer from registry, throws if not found |
 
 ### Exceptions
 
@@ -183,8 +324,10 @@ Access via `scope.Anchors.*`
 |--------|-----------|-----------|
 | All methods | `ObjectDisposedException` | If scope is disposed |
 | `Set<T>` / `Set(name, ...)` | `InvalidOperationException` | If anchor is already set |
-| `GetOrThrow<T>` / `GetOrThrow(name)` | `InvalidOperationException` | If anchor is not set |
-| `Compose<T>` / `Compose(name, ...)` | `InvalidOperationException` | If anchor is not set |
+| `GetOrThrow<T>` / `GetOrThrow(name)` | `InvalidOperationException` | If anchor is not set or has been garbage collected |
+| `Compose<T>` / `Compose(name, ...)` | `InvalidOperationException` | If anchor is not set or has been garbage collected |
+| `GetRequiredComposition<T>` / `GetRequiredComposition(name)` | `InvalidOperationException` | If anchor not set, has been collected, or no composition exists |
+| `GetRequiredComposer<T>` / `GetRequiredComposer(name)` | `InvalidOperationException` | If anchor not set, has been collected, or composer not in registry |
 
 ### Example
 

@@ -1,6 +1,6 @@
 namespace Cocoar.Capabilities;
 
-public sealed class CapabilityScope : IDisposable
+public class CapabilityScope : IDisposable
 {
     private readonly CapabilityScopeOptions _options;
     private readonly DefaultCapabilityRegistry _sharedRegistry;
@@ -26,7 +26,7 @@ public sealed class CapabilityScope : IDisposable
     /// <summary>
     /// API for managing the owner of this scope.
     /// </summary>
-    public ScopeOwnerApi Owner => _owner;
+    public virtual ScopeOwnerApi Owner => _owner;
     
     /// <summary>
     /// API for managing anchors of this scope.
@@ -81,5 +81,6 @@ public sealed class CapabilityScope : IDisposable
         _compositions.Dispose();
         _sharedRegistry.Dispose();
         _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }

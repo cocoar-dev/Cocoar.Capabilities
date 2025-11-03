@@ -151,17 +151,32 @@ public sealed class ScopeAnchorsApi
 
         anchor = null;
         return false;
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Creates a <see cref="Composer"/> for a typed anchor.
     /// </summary>
     /// <typeparam name="T">The type of the anchor.</typeparam>
     /// <param name="useRegistry">Optional. Whether to use the registry for this composition.</param>
     /// <returns>A <see cref="Composer"/> for the anchor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no anchor of the specified type is set or it has been collected.</exception>
-    public Composer Compose<T>(bool? useRegistry = null) where T : class
+    public Composer ComposeFor<T>(bool? useRegistry = null) where T : class
     {
         var anchor = Get<T>();
         return Scope.Compose(anchor, useRegistry);
+    }
+
+    /// <summary>
+    /// Creates a <see cref="Composer"/> for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <param name="useRegistry">Optional. Whether to use the registry for this composition.</param>
+    /// <returns>A <see cref="Composer"/> for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor of the specified type is set or it has been collected.</exception>
+    [Obsolete("Use ComposeFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public Composer Compose<T>(bool? useRegistry = null) where T : class
+    {
+        return ComposeFor<T>(useRegistry);
     }
 
     /// <summary>
@@ -183,7 +198,7 @@ public sealed class ScopeAnchorsApi
     /// </summary>
     /// <typeparam name="T">The type of the anchor.</typeparam>
     /// <returns>The composition for the anchor, or null if not found.</returns>
-    public Composition? GetComposition<T>() where T : class
+    public Composition? GetCompositionFor<T>() where T : class
     {
         if (!TryGet<T>(out var anchor) || anchor is null)
         {
@@ -191,6 +206,79 @@ public sealed class ScopeAnchorsApi
         }
 
         return Scope.Compositions.GetOrDefault(anchor) as Composition;
+    }
+
+    /// <summary>
+    /// Gets the composition for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composition for the anchor, or null if not found.</returns>
+    [Obsolete("Use GetCompositionFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public Composition? GetComposition<T>() where T : class
+    {
+        return GetCompositionFor<T>();
+    }
+
+    /// <summary>
+    /// Tries to get the composition for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <param name="composition">The composition, if found.</param>
+    /// <returns>True if a composition exists for the anchor; otherwise false.</returns>
+    public bool TryGetCompositionFor<T>(out Composition? composition) where T : class
+    {
+        if (!TryGet<T>(out var anchor) || anchor is null)
+        {
+            composition = null;
+            return false;
+        }
+
+        composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
+        return composition is not null;
+    }
+
+    /// <summary>
+    /// Tries to get the composition for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <param name="composition">The composition, if found.</param>
+    /// <returns>True if a composition exists for the anchor; otherwise false.</returns>
+    [Obsolete("Use TryGetCompositionFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public bool TryGetComposition<T>(out Composition? composition) where T : class
+    {
+        return TryGetCompositionFor<T>(out composition);
+    }
+
+    /// <summary>
+    /// Gets the composition for a typed anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composition exists.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composition for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composition exists.</exception>
+    public Composition GetRequiredCompositionFor<T>() where T : class
+    {
+        var anchor = Get<T>();
+        var composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
+        if (composition is null)
+        {
+            throw new InvalidOperationException($"No composition exists for the anchor of type {typeof(T).Name}.");
+        }
+
+        return composition;
+    }
+
+    /// <summary>
+    /// Gets the composition for a typed anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composition exists.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composition for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composition exists.</exception>
+    [Obsolete("Use GetRequiredCompositionFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public Composition GetRequiredComposition<T>() where T : class
+    {
+        return GetRequiredCompositionFor<T>();
     }
 
     /// <summary>
@@ -208,6 +296,189 @@ public sealed class ScopeAnchorsApi
         }
 
         return Scope.Compositions.GetOrDefault(anchor) as Composition;
+    }
+
+    /// <summary>
+    /// Tries to get the composition for a named anchor.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <param name="composition">The composition, if found.</param>
+    /// <returns>True if a composition exists for the anchor; otherwise false.</returns>
+    public bool TryGetComposition(string key, out Composition? composition)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (!TryGet(key, out var anchor) || anchor is null)
+        {
+            composition = null;
+            return false;
+        }
+
+        composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
+        return composition is not null;
+    }
+
+    /// <summary>
+    /// Gets the composition for a named anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composition exists.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <returns>The composition for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composition exists.</exception>
+    public Composition GetRequiredComposition(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        var anchor = Get(key);
+        var composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
+        if (composition is null)
+        {
+            throw new InvalidOperationException($"No composition exists for the anchor with key '{key}'.");
+        }
+
+        return composition;
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a typed anchor, or null if not found.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composer for the anchor, or null if not found in the registry.</returns>
+    public Composer? GetComposerFor<T>() where T : class
+    {
+        if (!TryGet<T>(out var anchor) || anchor is null)
+        {
+            return null;
+        }
+
+        return Scope.Composers.TryGet(anchor, out var composer) ? composer : null;
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a typed anchor, or null if not found.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composer for the anchor, or null if not found in the registry.</returns>
+    [Obsolete("Use GetComposerFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public Composer? GetComposer<T>() where T : class
+    {
+        return GetComposerFor<T>();
+    }
+
+    /// <summary>
+    /// Tries to get the composer from the registry for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <param name="composer">The composer, if found.</param>
+    /// <returns>True if a composer exists for the anchor; otherwise false.</returns>
+    public bool TryGetComposerFor<T>(out Composer? composer) where T : class
+    {
+        if (!TryGet<T>(out var anchor) || anchor is null)
+        {
+            composer = null;
+            return false;
+        }
+
+        return Scope.Composers.TryGet(anchor, out composer);
+    }
+
+    /// <summary>
+    /// Tries to get the composer from the registry for a typed anchor.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <param name="composer">The composer, if found.</param>
+    /// <returns>True if a composer exists for the anchor; otherwise false.</returns>
+    [Obsolete("Use TryGetComposerFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public bool TryGetComposer<T>(out Composer? composer) where T : class
+    {
+        return TryGetComposerFor<T>(out composer);
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a typed anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composer exists in the registry.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composer for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composer exists.</exception>
+    public Composer GetRequiredComposerFor<T>() where T : class
+    {
+        var anchor = Get<T>();
+        if (!Scope.Composers.TryGet(anchor, out var composer) || composer is null)
+        {
+            throw new InvalidOperationException($"No composer exists in the registry for the anchor of type {typeof(T).Name}.");
+        }
+
+        return composer;
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a typed anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composer exists in the registry.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The composer for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composer exists.</exception>
+    [Obsolete("Use GetRequiredComposerFor<T>() instead for clarity. This method will be removed in a future version.")]
+    public Composer GetRequiredComposer<T>() where T : class
+    {
+        return GetRequiredComposerFor<T>();
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a named anchor, or null if not found.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <returns>The composer for the anchor, or null if not found in the registry.</returns>
+    public Composer? GetComposer(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (!TryGet(key, out var anchor) || anchor is null)
+        {
+            return null;
+        }
+
+        return Scope.Composers.TryGet(anchor, out var composer) ? composer : null;
+    }
+
+    /// <summary>
+    /// Tries to get the composer from the registry for a named anchor.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <param name="composer">The composer, if found.</param>
+    /// <returns>True if a composer exists for the anchor; otherwise false.</returns>
+    public bool TryGetComposer(string key, out Composer? composer)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (!TryGet(key, out var anchor) || anchor is null)
+        {
+            composer = null;
+            return false;
+        }
+
+        return Scope.Composers.TryGet(anchor, out composer);
+    }
+
+    /// <summary>
+    /// Gets the composer from the registry for a named anchor.
+    /// Throws if no anchor is set, the anchor has been garbage collected, or no composer exists in the registry.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <returns>The composer for the anchor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composer exists.</exception>
+    public Composer GetRequiredComposer(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        var anchor = Get(key);
+        if (!Scope.Composers.TryGet(anchor, out var composer) || composer is null)
+        {
+            throw new InvalidOperationException($"No composer exists in the registry for the anchor with key '{key}'.");
+        }
+
+        return composer;
     }
 
     internal Dictionary<Type, WeakReference<object>> InternalTypedAnchors => _typedAnchors;

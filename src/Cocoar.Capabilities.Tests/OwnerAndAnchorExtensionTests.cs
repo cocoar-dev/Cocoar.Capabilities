@@ -51,7 +51,7 @@ public class OwnerAndAnchorExtensionTests
         var owner = new TestOwner { Name = "TypedOwner" };
         scope.Owner.Set(owner);
 
-        var composer = scope.Owner.Compose<TestOwner>();
+        var composer = scope.Owner.ComposeFor<TestOwner>();
 
         Assert.NotNull(composer);
 
@@ -66,7 +66,7 @@ public class OwnerAndAnchorExtensionTests
     {
         using var scope = new CapabilityScope();
 
-        Assert.Throws<InvalidOperationException>(() => scope.Owner.Compose<TestOwner>());
+        Assert.Throws<InvalidOperationException>(() => scope.Owner.ComposeFor<TestOwner>());
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class OwnerAndAnchorExtensionTests
         using var scope = new CapabilityScope();
         scope.Owner.Set(new TestOwner());
 
-        Assert.Throws<InvalidCastException>(() => scope.Owner.Compose<TestAnchor>());
+        Assert.Throws<InvalidCastException>(() => scope.Owner.ComposeFor<TestAnchor>());
     }
 
     [Fact]
@@ -91,6 +91,89 @@ public class OwnerAndAnchorExtensionTests
         // Verify composition was not registered
         var found = scope.Compositions.GetOrDefault(owner);
         Assert.Null(found);
+    }
+
+    [Fact]
+    public void Owner_TryGetComposition_ReturnsTrueWhenCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var owner = new TestOwner { Name = "CompTest" };
+        scope.Owner.Set(owner);
+
+        scope.Owner.Compose()
+            .Add(new TestCapability("test"))
+            .Build();
+
+        var success = scope.Owner.TryGetComposition(out var composition);
+
+        Assert.True(success);
+        Assert.NotNull(composition);
+        Assert.Single(composition.GetAll<TestCapability>());
+    }
+
+    [Fact]
+    public void Owner_TryGetComposition_ReturnsFalseWhenNoComposition()
+    {
+        using var scope = new CapabilityScope();
+        var owner = new TestOwner { Name = "NoComp" };
+        scope.Owner.Set(owner);
+
+        var success = scope.Owner.TryGetComposition(out var composition);
+
+        Assert.False(success);
+        Assert.Null(composition);
+    }
+
+    [Fact]
+    public void Owner_TryGetComposition_ReturnsFalseWhenNoOwner()
+    {
+        using var scope = new CapabilityScope();
+
+        var success = scope.Owner.TryGetComposition(out var composition);
+
+        Assert.False(success);
+        Assert.Null(composition);
+    }
+
+    [Fact]
+    public void Owner_TryGetComposer_ReturnsTrueWhenComposerInRegistry()
+    {
+        using var scope = new CapabilityScope();
+        var owner = new TestOwner { Name = "ComposerTest" };
+        scope.Owner.Set(owner);
+
+        var composer = scope.Owner.Compose(useRegistry: true);
+        composer.Add(new TestCapability("test"));
+
+        var success = scope.Owner.TryGetComposer(out var retrieved);
+
+        Assert.True(success);
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Owner_TryGetComposer_ReturnsFalseWhenNotInRegistry()
+    {
+        using var scope = new CapabilityScope();
+        var owner = new TestOwner { Name = "NoComposer" };
+        scope.Owner.Set(owner);
+
+        var success = scope.Owner.TryGetComposer(out var composer);
+
+        Assert.False(success);
+        Assert.Null(composer);
+    }
+
+    [Fact]
+    public void Owner_TryGetComposer_ReturnsFalseWhenNoOwner()
+    {
+        using var scope = new CapabilityScope();
+
+        var success = scope.Owner.TryGetComposer(out var composer);
+
+        Assert.False(success);
+        Assert.Null(composer);
     }
 
     #endregion
@@ -289,7 +372,7 @@ public class OwnerAndAnchorExtensionTests
             .Anchors.Set(obj);
 
         // Both should return composers for the same subject
-        var ownerComposer = scope.Owner.Compose<TestOwner>();
+        var ownerComposer = scope.Owner.ComposeFor<TestOwner>();
         var anchorComposer = scope.Anchors.Compose<TestOwner>();
 
         // Build separate compositions
@@ -301,6 +384,302 @@ public class OwnerAndAnchorExtensionTests
 
         // But the subject should be the same
         Assert.Same(comp1.Subject, comp2.Subject);
+    }
+
+    #endregion
+
+    #region Anchors Try-Pattern Tests
+
+    [Fact]
+    public void Anchors_TryGetComposition_TypedAnchor_ReturnsTrue_WhenCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+        var composer = scope.Anchors.Compose<TestOwner>();
+        var composition = composer.Add(new TestCapability("test")).Build();
+
+        var result = scope.Anchors.TryGetComposition<TestOwner>(out var retrieved);
+
+        Assert.True(result);
+        Assert.Same(composition, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposition_TypedAnchor_ReturnsFalse_WhenNoCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+
+        var result = scope.Anchors.TryGetComposition<TestOwner>(out var composition);
+
+        Assert.False(result);
+        Assert.Null(composition);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposition_NamedAnchor_ReturnsTrue_WhenCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+        var composer = scope.Anchors.Compose("test");
+        var composition = composer.Add(new TestCapability("test")).Build();
+
+        var result = scope.Anchors.TryGetComposition("test", out var retrieved);
+
+        Assert.True(result);
+        Assert.Same(composition, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposition_NamedAnchor_ReturnsFalse_WhenNoCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+
+        var result = scope.Anchors.TryGetComposition("test", out var composition);
+
+        Assert.False(result);
+        Assert.Null(composition);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposition_TypedAnchor_ReturnsComposition_WhenExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+        var composer = scope.Anchors.Compose<TestOwner>();
+        var composition = composer.Add(new TestCapability("test")).Build();
+
+        var retrieved = scope.Anchors.GetRequiredComposition<TestOwner>();
+
+        Assert.Same(composition, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposition_TypedAnchor_Throws_WhenNoCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Anchors.GetRequiredComposition<TestOwner>());
+        Assert.Contains("No composition exists", ex.Message);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposition_NamedAnchor_ReturnsComposition_WhenExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+        var composer = scope.Anchors.Compose("test");
+        var composition = composer.Add(new TestCapability("test")).Build();
+
+        var retrieved = scope.Anchors.GetRequiredComposition("test");
+
+        Assert.Same(composition, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposition_NamedAnchor_Throws_WhenNoCompositionExists()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Anchors.GetRequiredComposition("test"));
+        Assert.Contains("No composition exists", ex.Message);
+        Assert.Contains("test", ex.Message);
+    }
+
+    [Fact]
+    public void Anchors_GetComposer_TypedAnchor_ReturnsComposer_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+        var composer = scope.Anchors.Compose<TestOwner>(useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var retrieved = scope.Anchors.GetComposer<TestOwner>();
+
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetComposer_TypedAnchor_ReturnsNull_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+
+        var composer = scope.Anchors.GetComposer<TestOwner>();
+
+        Assert.Null(composer);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposer_TypedAnchor_ReturnsTrue_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+        var composer = scope.Anchors.Compose<TestOwner>(useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var result = scope.Anchors.TryGetComposer<TestOwner>(out var retrieved);
+
+        Assert.True(result);
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposer_TypedAnchor_ReturnsFalse_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+
+        var result = scope.Anchors.TryGetComposer<TestOwner>(out var composer);
+
+        Assert.False(result);
+        Assert.Null(composer);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposer_TypedAnchor_ReturnsComposer_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+        var composer = scope.Anchors.Compose<TestOwner>(useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var retrieved = scope.Anchors.GetRequiredComposer<TestOwner>();
+
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposer_TypedAnchor_Throws_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set(anchor);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Anchors.GetRequiredComposer<TestOwner>());
+        Assert.Contains("No composer exists", ex.Message);
+    }
+
+    [Fact]
+    public void Anchors_GetComposer_NamedAnchor_ReturnsComposer_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+        var composer = scope.Anchors.Compose("test", useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var retrieved = scope.Anchors.GetComposer("test");
+
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetComposer_NamedAnchor_ReturnsNull_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+
+        var composer = scope.Anchors.GetComposer("test");
+
+        Assert.Null(composer);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposer_NamedAnchor_ReturnsTrue_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+        var composer = scope.Anchors.Compose("test", useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var result = scope.Anchors.TryGetComposer("test", out var retrieved);
+
+        Assert.True(result);
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_TryGetComposer_NamedAnchor_ReturnsFalse_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+
+        var result = scope.Anchors.TryGetComposer("test", out var composer);
+
+        Assert.False(result);
+        Assert.Null(composer);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposer_NamedAnchor_ReturnsComposer_WhenRegistryHasEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+        var composer = scope.Anchors.Compose("test", useRegistry: true);
+        composer.Add(new TestCapability("from-registry"));
+
+        var retrieved = scope.Anchors.GetRequiredComposer("test");
+
+        Assert.NotNull(retrieved);
+        Assert.Same(composer, retrieved);
+    }
+
+    [Fact]
+    public void Anchors_GetRequiredComposer_NamedAnchor_Throws_WhenNoRegistryEntry()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestOwner { Name = "Anchor" };
+
+        scope.Anchors.Set("test", anchor);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Anchors.GetRequiredComposer("test"));
+        Assert.Contains("No composer exists", ex.Message);
+        Assert.Contains("test", ex.Message);
     }
 
     #endregion

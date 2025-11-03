@@ -99,7 +99,7 @@ scope.Owner.Set(pipeline).Scope
      .Anchors.Set("tenant", tenantContext);
 
 // Later, compose capabilities using owner/anchors
-scope.Owner.Compose<PipelineHost>()
+scope.Owner.ComposeFor<PipelineHost>()
            .Add(new DiagnosticsCapability())
            .Build();
 
@@ -123,6 +123,30 @@ if (scope.Anchors.TryGet<EnvironmentContext>(out var envAnchor))
 }
 ```
 
+### Strongly-Typed Scopes
+
+Create scopes with strongly-typed owners for enhanced type safety:
+
+```csharp
+// Create a typed scope - owner set at construction
+var configManager = new ConfigurationManager();
+using var scope = new CapabilityScope<ConfigurationManager>(configManager);
+
+// No generic parameter needed - type is known!
+var owner = scope.Owner.Get();  // Returns ConfigurationManager directly
+var composer = scope.Owner.Compose();  // Composes for the owner
+
+// All owner methods are strongly typed
+if (scope.Owner.TryGetComposition(out var composition))
+{
+    // Use composition
+}
+
+// Works seamlessly with options
+var options = new CapabilityScopeOptions { UseComposerRegistry = true };
+using var typedScope = new CapabilityScope<ConfigManager>(config, options);
+```
+
 **Learn more:** [Owner and Anchor Quick Reference](docs/owner-and-anchor-quick-reference.md)
 
 ## 📚 Documentation
@@ -134,6 +158,7 @@ if (scope.Anchors.TryGet<EnvironmentContext>(out var envAnchor))
 ## 🎯 Key Concepts
 
 - **CapabilityScope** - Entry point for all capability operations
+- **CapabilityScope<TOwner>** - Strongly-typed scope with immutable owner set at construction
 - **Composer** - Fluent builder for creating compositions
 - **Composition** - Immutable collection of capabilities attached to a subject
 - **Primary Capability** - Single "main" capability per subject (via `IPrimaryCapability`)

@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-11-03
+
+### Added
+- **Strongly-Typed Scopes**: `CapabilityScope<TOwner>` for compile-time type safety
+  - Generic scope class with immutable owner set at construction
+  - Constructors: `CapabilityScope(TOwner owner)` and `CapabilityScope(TOwner owner, CapabilityScopeOptions options)`
+  - Inherits from `CapabilityScope` for full backward compatibility
+  - Enables domain-specific scope classes (e.g., `class PipelineScope : CapabilityScope<PipelineHost>`)
+- **Strongly-Typed Owner API**: `ScopeOwnerApi<TOwner>` with no generic parameters needed
+  - Methods: `Get()`, `TryGet()`, `Compose()`, `GetComposition()`, `GetRequiredComposition()`, `GetComposer()`, `GetRequiredComposer()`
+  - All methods work with concrete owner type without generic parameters
+  - Try-pattern methods: `TryGetComposition()`, `TryGetComposer()`
+- **Enhanced ScopeOwnerApi**: Try-pattern and typed methods
+  - Added `TryGetComposition(out Composition?)` for safe composition retrieval
+  - Added `TryGetComposer(out Composer?)` for safe composer retrieval
+  - Added `ComposeFor<T>()` and `GetCompositionFor<T>()` for type-checked operations
+  - Added `GetComposerFor<T>()`, `GetRequiredComposerFor<T>()` for composer registry operations
+  - Obsolete attributes on old method names (`Compose<T>()` → `ComposeFor<T>()`, `GetComposition<T>()` → `GetCompositionFor<T>()`)
+- **Enhanced ScopeAnchorsApi**: Consistent API surface with try-pattern, required, and *For methods
+  - Added `ComposeFor<T>()` - new preferred method name with obsolete alias on `Compose<T>()`
+  - Added `GetCompositionFor<T>()` - new preferred method name with obsolete alias on `GetComposition<T>()`
+  - Added `TryGetCompositionFor<T>(out Composition?)` and `TryGetComposition(string, out Composition?)` for safe composition retrieval
+  - Added `GetRequiredCompositionFor<T>()` and `GetRequiredComposition(string)` that throw when composition doesn't exist
+  - Added `GetComposerFor<T>()`, `GetComposer(string)` for getting composers from registry (returns null if not found)
+  - Added `TryGetComposerFor<T>(out Composer?)`, `TryGetComposer(string, out Composer?)` for try-pattern composer retrieval
+  - Added `GetRequiredComposerFor<T>()`, `GetRequiredComposer(string)` that throw when composer not in registry
+  - Obsolete attributes on old method names for smooth migration (`Compose<T>()` → `ComposeFor<T>()`, etc.)
+  - Complete API parity between Owner and Anchors APIs
+
+### Documentation
+- Updated README with strongly-typed scope examples
+- Added comprehensive API documentation for `CapabilityScope<TOwner>` and `ScopeOwnerApi<TOwner>`
+- Added "Strongly-Typed Scopes" and "Domain-Specific Typed Scopes" examples in docs/examples.md
+- Updated API reference with new ScopeAnchorsApi methods
+
 ## [1.1.0] - 2025-10-26
 
 ### Added
