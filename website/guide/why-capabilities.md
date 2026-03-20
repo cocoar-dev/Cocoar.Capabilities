@@ -1,5 +1,7 @@
 # Why Capabilities?
 
+Cocoar.Capabilities is a **composition layer for typed metadata**. It is not a DI container, plugin framework, or ECS — it solves a specific problem: attaching and querying typed metadata across assembly boundaries without coupling.
+
 ## The Cross-Assembly Metadata Problem
 
 When building fluent APIs that span multiple assemblies, attaching metadata to builder objects becomes a fundamental challenge. A core assembly defines a builder, extension assemblies need to attach metadata to it, and a consuming assembly needs to read all attached metadata — without circular dependencies.

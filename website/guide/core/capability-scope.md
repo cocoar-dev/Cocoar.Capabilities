@@ -29,9 +29,24 @@ composer.Add(new SomeCapability()).Build();
 
 This registers the subject in the composer registry (if enabled), then `Build()` stores the resulting composition in the composition registry.
 
+If you call `Compose()` on a subject that already has a composition, the new composition **replaces** the existing one in the registry. Use `Recompose()` instead when you want to build on existing capabilities.
+
+::: warning Subject lifetime
+When using a reference-type subject, the scope stores it via `ConditionalWeakTable` — if the subject is garbage collected, the composition silently disappears. Always keep a reference to your subject:
+```csharp
+// Bad — temporary object, no reference held
+scope.Compose(new MyService()).Add(cap).Build(); // composition may vanish after GC
+
+// Good — reference kept alive
+var service = new MyService();
+scope.Compose(service).Add(cap).Build(); // composition lives as long as service
+```
+See [Registries](/guide/advanced/registries) for details on reference vs value type storage.
+:::
+
 ## Recomposing
 
-Use `Recompose()` to create a new composition based on an existing one:
+Use `Recompose()` to create a new composition based on an existing one — it inherits all capabilities from the original:
 
 ```csharp
 var existing = scope.Compositions.GetRequired<string>("my-subject");
@@ -40,7 +55,7 @@ scope.Recompose(existing)
     .Build();
 ```
 
-The new composition replaces the old one in the registry.
+The new composition replaces the old one in the registry. The difference from calling `Compose()` again: `Recompose()` carries over all existing capabilities, while `Compose()` starts from scratch.
 
 ## Context Isolation
 

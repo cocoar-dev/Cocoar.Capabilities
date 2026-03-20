@@ -1,6 +1,8 @@
 # Anchors API
 
-Anchors associate additional context objects with a scope — beyond the single owner. Two kinds exist: **typed anchors** (keyed by type) and **named anchors** (keyed by string).
+While the [Owner API](/guide/scope-context/owner-api) gives a scope a single identity, you often need to associate *additional* context objects — a database connection, a cache, an environment context. Anchors let you attach multiple named or typed objects to the scope and compose capabilities onto them.
+
+Two kinds exist: **typed anchors** (keyed by type, one per type) and **named anchors** (keyed by string, for multiple instances of the same type).
 
 ## Typed Anchors
 

@@ -1,6 +1,8 @@
 # Owner API
 
-The Owner API associates a single distinguished object with a `CapabilityScope`. The owner is typically the object that "owns" or created the scope — for example, a service host, pipeline runner, or application root.
+When you pass a scope between components — to extension methods, helper classes, or across layers — receiving code often needs to know *who* created or manages the scope. The Owner API solves this by associating a single distinguished object with the scope.
+
+This is the object that "owns" or manages the scope — for example, a service host, pipeline runner, or application root. It also serves as a convenient subject for composing capabilities onto the owner itself.
 
 ## Setting an Owner
 

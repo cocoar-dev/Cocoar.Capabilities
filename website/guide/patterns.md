@@ -133,6 +133,8 @@ public class PluginHost
 
 **When to consider:** You're building an extensibility system where plugins come from different assemblies and need to self-describe their features, dependencies, or metadata.
 
+**Simpler alternative:** If all plugins are known at compile time, a simple `IPlugin` interface with typed properties (e.g., `Features`, `Dependencies`) is more straightforward. Capabilities shine when plugin types are unknown to the host at compile time.
+
 ## Multi-Tenant Context Isolation
 
 Different `CapabilityScope` instances are completely independent worlds. This maps naturally to multi-tenant architectures:
@@ -177,6 +179,8 @@ public class TenantService
 
 **When to consider:** You need per-tenant customization of metadata, error messages, feature flags, or configuration — and you want complete isolation without tenant-ID checks scattered through your code.
 
+**Simpler alternative:** A `Dictionary<string, TenantConfig>` works fine for static per-tenant configuration. Scopes add value when tenants need different *capability compositions* — different pipelines, different behaviors attached to the same identifiers.
+
 ## Attaching Behavior to Values
 
 The [Enum Enrichment example](/reference/examples#enum-enrichment) shows attaching *data* to enum values. But capabilities can also be *actions* — turning values into dispatch targets:
@@ -207,6 +211,8 @@ composition?.UsingFirstOrDefault<Action<HttpContext>>(handler => handler(httpCon
 This eliminates switch statements over enums entirely. Each value carries its own behavior.
 
 **When to consider:** You have enum values or status codes that map to distinct behavior, and you want to avoid growing switch statements. Especially useful when the behavior comes from a different assembly than the enum definition.
+
+**Simpler alternative:** A `Dictionary<ErrorCode, Action<HttpContext>>` achieves the same dispatch. Capabilities add value when the behavior is attached from multiple assemblies, or when you need multiple capability types per value (display + severity + handler).
 
 ## Choosing the Right Pattern
 

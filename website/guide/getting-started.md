@@ -10,13 +10,15 @@ All types are in the `Cocoar.Capabilities` namespace.
 
 ## Quick Start: Compose and Query
 
+A **subject** is any object you compose capabilities onto — it's the key that identifies a composition in the registry. Subjects can be strings, class instances, enum values, or any other object.
+
 ```csharp
 using Cocoar.Capabilities;
 
 // 1. Create a scope
 var scope = new CapabilityScope();
 
-// 2. Compose capabilities onto a subject
+// 2. Compose capabilities onto a subject (here, the string "user-service")
 scope.Compose("user-service")
     .Add(new LoggingCapability { Level = LogLevel.Debug })
     .Add(new RetryCapability { MaxAttempts = 3 })
@@ -57,7 +59,7 @@ public class EmailNotifier : INotifier, IHealthCheck
 }
 
 scope.Compose("notifications")
-    .AddAs<(INotifier, IHealthCheck)>(new EmailNotifier())
+    .AddAs<(INotifier, IHealthCheck)>(new EmailNotifier()) // tuple = register under both interfaces
     .Build();
 
 var composition = scope.Compositions.GetRequired<string>("notifications");

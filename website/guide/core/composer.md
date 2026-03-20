@@ -110,5 +110,7 @@ var composition = scope.Compose(subject)
 
 var composition = scope.Compose(subject)
     .Add(new SomeCapability())
-    .Build(useRegistry: false);  // skip registry storage
+    .Build(useRegistry: false);  // skip registry — use the returned composition directly
 ```
+
+Use `useRegistry: false` when you need a one-off composition that you pass directly to a consumer, without polluting the scope's registry.
