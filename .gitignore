@@ -375,3 +375,8 @@ dist/
 .DS_Store
 
 /local
+
+# VitePress documentation
+website/node_modules/
+website/.vitepress/cache/
+website/.vitepress/dist/

@@ -47,15 +47,52 @@ public sealed class ScopeAnchorsApi
 
     /// <summary>
     /// Gets a typed anchor from this scope.
+    /// Returns null if the anchor is not set or has been garbage collected.
+    /// </summary>
+    /// <typeparam name="T">The type of the anchor.</typeparam>
+    /// <returns>The anchor, or null if not available.</returns>
+    public T? Get<T>() where T : class
+    {
+        Scope.ThrowIfDisposed();
+
+        if (_typedAnchors.TryGetValue(typeof(T), out var weakRef) && weakRef.TryGetTarget(out var target))
+        {
+            return (T)target;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a named anchor from this scope.
+    /// Returns null if the anchor is not set or has been garbage collected.
+    /// </summary>
+    /// <param name="key">The key of the anchor.</param>
+    /// <returns>The anchor, or null if not available.</returns>
+    public object? Get(string key)
+    {
+        Scope.ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (_namedAnchors.TryGetValue(key, out var weakRef) && weakRef.TryGetTarget(out var target))
+        {
+            return target;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a typed anchor from this scope.
     /// Throws if the anchor is not set or has been garbage collected.
     /// </summary>
     /// <typeparam name="T">The type of the anchor.</typeparam>
     /// <returns>The anchor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no anchor of the specified type is set or it has been collected.</exception>
-    public T Get<T>() where T : class
+    public T GetOrThrow<T>() where T : class
     {
         Scope.ThrowIfDisposed();
-        
+
         if (!_typedAnchors.TryGetValue(typeof(T), out var weakRef))
         {
             throw new InvalidOperationException($"No anchor of type {typeof(T).Name} has been set for this scope.");
@@ -76,7 +113,7 @@ public sealed class ScopeAnchorsApi
     /// <param name="key">The key of the anchor.</param>
     /// <returns>The anchor.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no anchor with the specified key is set or it has been collected.</exception>
-    public object Get(string key)
+    public object GetOrThrow(string key)
     {
         Scope.ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(key);
@@ -93,24 +130,6 @@ public sealed class ScopeAnchorsApi
 
         return target;
     }
-
-    /// <summary>
-    /// Gets a typed anchor from this scope.
-    /// Alias for <see cref="Get{T}"/>.
-    /// </summary>
-    /// <typeparam name="T">The type of the anchor.</typeparam>
-    /// <returns>The anchor.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when no anchor of the specified type is set or it has been collected.</exception>
-    public T GetOrThrow<T>() where T : class => Get<T>();
-
-    /// <summary>
-    /// Gets a named anchor from this scope.
-    /// Alias for <see cref="Get(string)"/>.
-    /// </summary>
-    /// <param name="key">The key of the anchor.</param>
-    /// <returns>The anchor.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when no anchor with the specified key is set or it has been collected.</exception>
-    public object GetOrThrow(string key) => Get(key);
 
     /// <summary>
     /// Tries to get a typed anchor from this scope.
@@ -162,7 +181,7 @@ public sealed class ScopeAnchorsApi
     /// <exception cref="InvalidOperationException">Thrown when no anchor of the specified type is set or it has been collected.</exception>
     public Composer ComposeFor<T>(bool? useRegistry = null) where T : class
     {
-        var anchor = Get<T>();
+        var anchor = GetOrThrow<T>();
         return Scope.Compose(anchor, useRegistry);
     }
 
@@ -189,7 +208,7 @@ public sealed class ScopeAnchorsApi
     public Composer Compose(string key, bool? useRegistry = null)
     {
         ArgumentNullException.ThrowIfNull(key);
-        var anchor = Get(key);
+        var anchor = GetOrThrow(key);
         return Scope.Compose(anchor, useRegistry);
     }
 
@@ -258,7 +277,7 @@ public sealed class ScopeAnchorsApi
     /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composition exists.</exception>
     public Composition GetRequiredCompositionFor<T>() where T : class
     {
-        var anchor = Get<T>();
+        var anchor = GetOrThrow<T>();
         var composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
         if (composition is null)
         {
@@ -329,7 +348,7 @@ public sealed class ScopeAnchorsApi
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        var anchor = Get(key);
+        var anchor = GetOrThrow(key);
         var composition = Scope.Compositions.GetOrDefault(anchor) as Composition;
         if (composition is null)
         {
@@ -403,7 +422,7 @@ public sealed class ScopeAnchorsApi
     /// <exception cref="InvalidOperationException">Thrown when no anchor is set, it has been collected, or no composer exists.</exception>
     public Composer GetRequiredComposerFor<T>() where T : class
     {
-        var anchor = Get<T>();
+        var anchor = GetOrThrow<T>();
         if (!Scope.Composers.TryGet(anchor, out var composer) || composer is null)
         {
             throw new InvalidOperationException($"No composer exists in the registry for the anchor of type {typeof(T).Name}.");
@@ -472,7 +491,7 @@ public sealed class ScopeAnchorsApi
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        var anchor = Get(key);
+        var anchor = GetOrThrow(key);
         if (!Scope.Composers.TryGet(anchor, out var composer) || composer is null)
         {
             throw new InvalidOperationException($"No composer exists in the registry for the anchor with key '{key}'.");

@@ -121,34 +121,56 @@ public class OwnerAndAnchorTests
     }
 
     [Fact]
-    public void Owner_Generic_ThrowsWhenNotSet()
+    public void Owner_Get_ReturnsNullWhenNotSet()
     {
         using var scope = new CapabilityScope();
 
-        var ex = Assert.Throws<InvalidOperationException>(() => scope.Owner.Get<TestOwner>());
-        Assert.Contains("No owner has been set", ex.Message);
+        var result = scope.Owner.Get<TestOwner>();
+
+        Assert.Null(result);
     }
 
     [Fact]
-    public void Owner_Generic_ThrowsWhenWrongType()
+    public void Owner_Get_ReturnsNullWhenWrongType()
     {
         using var scope = new CapabilityScope();
         var owner = new TestOwner();
         scope.Owner.Set(owner);
 
-        var ex = Assert.Throws<InvalidCastException>(() => scope.Owner.Get<TestAnchor>());
-        Assert.Contains("TestOwner", ex.Message);
-        Assert.Contains("TestAnchor", ex.Message);
+        var result = scope.Owner.Get<TestAnchor>();
+
+        Assert.Null(result);
     }
 
     [Fact]
-    public void Owner_Generic_ThrowsWhenDisposed()
+    public void Owner_Get_ThrowsWhenDisposed()
     {
         var scope = new CapabilityScope();
         scope.Owner.Set(new TestOwner());
         scope.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => scope.Owner.Get<TestOwner>());
+    }
+
+    [Fact]
+    public void Owner_GetOrThrow_ThrowsWhenNotSet()
+    {
+        using var scope = new CapabilityScope();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Owner.GetOrThrow<TestOwner>());
+        Assert.Contains("No owner has been set", ex.Message);
+    }
+
+    [Fact]
+    public void Owner_GetOrThrow_ThrowsWhenWrongType()
+    {
+        using var scope = new CapabilityScope();
+        var owner = new TestOwner();
+        scope.Owner.Set(owner);
+
+        var ex = Assert.Throws<InvalidCastException>(() => scope.Owner.GetOrThrow<TestAnchor>());
+        Assert.Contains("TestOwner", ex.Message);
+        Assert.Contains("TestAnchor", ex.Message);
     }
 
     [Fact]
@@ -199,7 +221,7 @@ public class OwnerAndAnchorTests
     }
 
     [Fact]
-    public void Owner_ThrowsWhenCollected()
+    public void Owner_Get_ReturnsNullWhenCollected()
     {
         using var scope = new CapabilityScope();
         SetOwnerAndCollect(scope);
@@ -208,7 +230,21 @@ public class OwnerAndAnchorTests
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        var ex = Assert.Throws<InvalidOperationException>(() => scope.Owner.Get<TestOwner>());
+        var result = scope.Owner.Get<TestOwner>();
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Owner_GetOrThrow_ThrowsWhenCollected()
+    {
+        using var scope = new CapabilityScope();
+        SetOwnerAndCollect(scope);
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => scope.Owner.GetOrThrow<TestOwner>());
         Assert.Contains("garbage collected", ex.Message);
     }
 
@@ -300,6 +336,29 @@ public class OwnerAndAnchorTests
     }
 
     [Fact]
+    public void GetAnchor_Generic_ReturnsCorrectType()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestAnchor { Value = 100 };
+        scope.Anchors.Set(anchor);
+
+        var retrieved = scope.Anchors.Get<TestAnchor>();
+
+        Assert.Same(anchor, retrieved);
+        Assert.Equal(100, retrieved!.Value);
+    }
+
+    [Fact]
+    public void GetAnchor_Generic_ReturnsNullWhenNotSet()
+    {
+        using var scope = new CapabilityScope();
+
+        var result = scope.Anchors.Get<TestAnchor>();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void GetAnchorOrThrow_Generic_ReturnsCorrectType()
     {
         using var scope = new CapabilityScope();
@@ -361,6 +420,20 @@ public class OwnerAndAnchorTests
         scope.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => scope.Anchors.TryGet<TestAnchor>(out _));
+    }
+
+    [Fact]
+    public void GetAnchor_Generic_ReturnsNullWhenCollected()
+    {
+        using var scope = new CapabilityScope();
+        SetAnchorAndCollect(scope);
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        var result = scope.Anchors.Get<TestAnchor>();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -475,6 +548,28 @@ public class OwnerAndAnchorTests
     }
 
     [Fact]
+    public void GetAnchor_Named_ReturnsCorrectAnchor()
+    {
+        using var scope = new CapabilityScope();
+        var anchor = new TestAnchor { Value = 100 };
+        scope.Anchors.Set("environment", anchor);
+
+        var retrieved = scope.Anchors.Get("environment");
+
+        Assert.Same(anchor, retrieved);
+    }
+
+    [Fact]
+    public void GetAnchor_Named_ReturnsNullWhenNotSet()
+    {
+        using var scope = new CapabilityScope();
+
+        var result = scope.Anchors.Get("missing-key");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public void GetAnchorOrThrow_Named_ReturnsCorrectAnchor()
     {
         using var scope = new CapabilityScope();
@@ -490,7 +585,7 @@ public class OwnerAndAnchorTests
     public void GetAnchorOrThrow_Named_ThrowsOnNullKey()
     {
         using var scope = new CapabilityScope();
-        
+
         Assert.Throws<ArgumentNullException>(() => scope.Anchors.GetOrThrow(null!));
     }
 
@@ -551,6 +646,20 @@ public class OwnerAndAnchorTests
         scope.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => scope.Anchors.TryGet("key", out _));
+    }
+
+    [Fact]
+    public void GetAnchor_Named_ReturnsNullWhenCollected()
+    {
+        using var scope = new CapabilityScope();
+        SetNamedAnchorAndCollect(scope, "temp-key-get");
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        var result = scope.Anchors.Get("temp-key-get");
+        Assert.Null(result);
     }
 
     [Fact]

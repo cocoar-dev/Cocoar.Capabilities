@@ -51,16 +51,34 @@ public sealed class ScopeOwnerApi
 
     /// <summary>
     /// Gets the owner of the scope, cast to the specified type.
+    /// Returns null if the owner is not set, has been garbage collected, or is not of the expected type.
+    /// </summary>
+    /// <typeparam name="T">The expected type of the owner.</typeparam>
+    /// <returns>The owner, or null if not available or not of the expected type.</returns>
+    public T? Get<T>() where T : class
+    {
+        Scope.ThrowIfDisposed();
+
+        if (_owner is not null && _owner.TryGetTarget(out var target) && target is T typedOwner)
+        {
+            return typedOwner;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets the owner of the scope, cast to the specified type.
     /// Throws if the owner is not set, has been garbage collected, or is not of the expected type.
     /// </summary>
     /// <typeparam name="T">The expected type of the owner.</typeparam>
     /// <returns>The owner.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no owner is set or it has been collected.</exception>
     /// <exception cref="InvalidCastException">Thrown when the owner is not of type <typeparamref name="T"/>.</exception>
-    public T Get<T>() where T : class
+    public T GetOrThrow<T>() where T : class
     {
         Scope.ThrowIfDisposed();
-        
+
         if (_owner is null)
         {
             throw new InvalidOperationException("No owner has been set for this scope.");
@@ -78,16 +96,6 @@ public sealed class ScopeOwnerApi
 
         return typedOwner;
     }
-
-    /// <summary>
-    /// Gets the owner of the scope, cast to the specified type.
-    /// Alias for <see cref="Get{T}"/>.
-    /// </summary>
-    /// <typeparam name="T">The expected type of the owner.</typeparam>
-    /// <returns>The owner.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when no owner is set or it has been collected.</exception>
-    /// <exception cref="InvalidCastException">Thrown when the owner is not of type <typeparamref name="T"/>.</exception>
-    public T GetOrThrow<T>() where T : class => Get<T>();
 
     /// <summary>
     /// Tries to get the owner of the scope, cast to the specified type.
@@ -135,7 +143,7 @@ public sealed class ScopeOwnerApi
     /// <exception cref="InvalidCastException">Thrown when the owner is not of type <typeparamref name="T"/>.</exception>
     public Composer ComposeFor<T>(bool? useRegistry = null) where T : class
     {
-        var owner = Get<T>();
+        var owner = GetOrThrow<T>();
         return Scope.Compose(owner, useRegistry);
     }
 
@@ -236,7 +244,7 @@ public sealed class ScopeOwnerApi
     /// <exception cref="InvalidCastException">Thrown when the owner is not of type <typeparamref name="T"/>.</exception>
     public Composition GetRequiredCompositionFor<T>() where T : class
     {
-        var owner = Get<T>(); // Throws if wrong type or not found
+        var owner = GetOrThrow<T>();
 
         var composition = Scope.Compositions.GetOrDefault(owner) as Composition;
         if (composition is null)
@@ -323,7 +331,7 @@ public sealed class ScopeOwnerApi
     /// <exception cref="InvalidCastException">Thrown when the owner is not of type <typeparamref name="T"/>.</exception>
     public Composer GetRequiredComposerFor<T>() where T : class
     {
-        var owner = Get<T>(); // Throws if wrong type or not found
+        var owner = GetOrThrow<T>();
 
         if (!Scope.Composers.TryGet(owner, out var composer) || composer is null)
         {

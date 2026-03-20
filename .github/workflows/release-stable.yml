@@ -90,3 +90,62 @@ jobs:
           for p in artifacts/*.nupkg artifacts/*.snupkg; do
             dotnet nuget push "$p" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY" --skip-duplicate
           done
+
+  deploy-docs:
+    name: Deploy Documentation
+    needs: [publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build VitePress
+        working-directory: website
+        run: npx vitepress build
+
+      - name: Extract docs version
+        id: docs-version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          echo "value=v${MAJOR}.${MINOR}" >> $GITHUB_OUTPUT
+
+      - name: Package
+        run: cd website/.vitepress/dist && zip -r $GITHUB_WORKSPACE/docs.zip .
+
+      - name: Upload to Shelf
+        env:
+          KEY: ${{ secrets.SHELF_API_KEY }}
+          URL: ${{ secrets.SHELF_BASE_URL }}
+          VER: ${{ steps.docs-version.outputs.value }}
+        run: |
+          echo "Deploying capabilities docs $VER to $URL"
+          curl -f -X POST \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/zip" \
+            --data-binary @$GITHUB_WORKSPACE/docs.zip \
+            "${URL}/api/products/capabilities/versions/${VER}"
+
+      - name: Docs deployment summary
+        run: |
+          echo "### Documentation Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Product:** capabilities" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.docs-version.outputs.value }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ secrets.SHELF_BASE_URL }}/capabilities/" >> $GITHUB_STEP_SUMMARY

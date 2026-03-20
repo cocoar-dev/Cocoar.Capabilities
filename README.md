@@ -8,164 +8,52 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 [![Downloads](https://img.shields.io/nuget/dt/Cocoar.Capabilities.svg)](https://www.nuget.org/packages/Cocoar.Capabilities/)
 
-
-
-## 🚀 Features
-
-- **🎯 Type-Safe Composition** - Attach multiple capabilities to any object with full type safety
-- **⚡ High Performance** - Zero-allocation lookups and minimal overhead
-- **🔒 Immutable Compositions** - Thread-safe by design with immutable capability collections
-- **🎨 Flexible Registration** - Support for multiple contract types per capability
-- **📦 Primary Capabilities** - Enforce single "primary" capability per subject
-- **🔄 Recomposition** - Modify existing compositions safely
-- **🎭 Custom Ordering** - Control capability resolution order with flexible ordering strategies
-- **🗂️ Registry Support** - Optional registries for managing compositions across your application
-
-## 📦 Installation
+## Installation
 
 ```bash
 dotnet add package Cocoar.Capabilities
 ```
 
-## 🎓 Quick Start
+## Quick Start
 
 ```csharp
 using Cocoar.Capabilities;
 
-// Create a scope to manage capabilities
-using var scope = new CapabilityScope();
+// Create a scope and compose capabilities onto a subject
+var scope = new CapabilityScope();
 
-// Define your subject
-var document = new Document("README.md");
-
-// Compose capabilities
-var composition = scope.Compose(document)
-    .Add(new EditCapability())
-    .Add(new PrintCapability())
-    .Add(new ShareCapability())
+scope.Compose("user-service")
+    .Add(new LoggingCapability { Level = LogLevel.Debug })
+    .Add(new RetryCapability { MaxAttempts = 3 })
     .Build();
 
-// Retrieve and use capabilities
-var capabilities = composition.GetAll<EditCapability>();
-foreach (var cap in capabilities)
-{
-    cap.Edit(document);
-}
+// Query the composition
+var composition = scope.Compositions.GetRequired<string>("user-service");
+var logging = composition.GetFirstOrDefault<LoggingCapability>();
+Console.WriteLine(composition.Has<LoggingCapability>()); // True
 ```
 
-### Primary Capabilities
+## Documentation
 
-Enforce a single "primary" capability per subject:
+Full documentation with guides, API reference, and examples:
 
-```csharp
-public record UserPrimaryCapability(string UserId, string Name) : IPrimaryCapability;
+**[docs.cocoar.dev/capabilities](https://docs.cocoar.dev/capabilities/)**
 
-var composition = scope.Compose(user)
-    .Add(new UserPrimaryCapability("user123", "John Doe"))
-    .Add(new AdminCapability("Level2"))
-    .Build();
+- [Getting Started](https://docs.cocoar.dev/capabilities/guide/getting-started) — Install, compose, query
+- [Why Capabilities?](https://docs.cocoar.dev/capabilities/guide/why-capabilities) — The problem this solves
+- [API Reference](https://docs.cocoar.dev/capabilities/reference/api) — Complete method reference
+- [Examples](https://docs.cocoar.dev/capabilities/reference/examples) — Real-world patterns
 
-// Retrieve the primary capability
-var primary = composition.GetPrimary();
-Console.WriteLine($"User: {primary.Name}");
-```
+## Key Concepts
 
-### Multiple Contracts
+| Type | Role |
+|------|------|
+| `CapabilityScope` | Container that manages composers and compositions |
+| `Composer` | Fluent builder for attaching capabilities to a subject |
+| `IComposition` | Immutable, thread-safe result of a composition |
+| `IPrimaryCapability` | Marker interface for the "identity" capability |
+| `CapabilityScope<TOwner>` | Strongly-typed scope with immutable owner |
 
-Register a single capability under multiple contract types:
-
-```csharp
-var composition = scope.Compose(myObject)
-    .AddAs<(IValidator, IFormatter)>(new DataProcessor())
-    .Build();
-
-// Access via either contract
-var validator = composition.GetFirstOrDefault<IValidator>();
-var formatter = composition.GetFirstOrDefault<IFormatter>();
-```
-
-### Owner and Anchors
-
-Associate scopes with well-known subjects for enhanced composability:
-
-```csharp
-// Setup scope with owner and anchors
-var pipeline = new PipelineHost("Main");
-var envContext = new EnvironmentContext { Name = "Production" };
-
-using var scope = new CapabilityScope();
-scope.Owner.Set(pipeline).Scope
-     .Anchors.Set<EnvironmentContext>(envContext).Scope
-     .Anchors.Set("tenant", tenantContext);
-
-// Later, compose capabilities using owner/anchors
-scope.Owner.ComposeFor<PipelineHost>()
-           .Add(new DiagnosticsCapability())
-           .Build();
-
-scope.Anchors.Compose<EnvironmentContext>()
-             .Add(new EnvironmentCapability())
-             .Build();
-
-// Retrieve owner or anchors (throwing)
-var owner = scope.Owner.Get<PipelineHost>();
-var env = scope.Anchors.Get<EnvironmentContext>();
-
-// Safe retrieval for long-running scopes
-if (scope.Owner.TryGet<PipelineHost>(out var pipelineOwner))
-{
-    // Owner is alive, use it
-}
-
-if (scope.Anchors.TryGet<EnvironmentContext>(out var envAnchor))
-{
-    // Anchor is alive, use it
-}
-```
-
-### Strongly-Typed Scopes
-
-Create scopes with strongly-typed owners for enhanced type safety:
-
-```csharp
-// Create a typed scope - owner set at construction
-var configManager = new ConfigurationManager();
-using var scope = new CapabilityScope<ConfigurationManager>(configManager);
-
-// No generic parameter needed - type is known!
-var owner = scope.Owner.Get();  // Returns ConfigurationManager directly
-var composer = scope.Owner.Compose();  // Composes for the owner
-
-// All owner methods are strongly typed
-if (scope.Owner.TryGetComposition(out var composition))
-{
-    // Use composition
-}
-
-// Works seamlessly with options
-var options = new CapabilityScopeOptions { UseComposerRegistry = true };
-using var typedScope = new CapabilityScope<ConfigManager>(config, options);
-```
-
-**Learn more:** [Owner and Anchor Quick Reference](docs/owner-and-anchor-quick-reference.md)
-
-## 📚 Documentation
-
-- **[Examples](docs/examples.md)** - Detailed examples and use cases
-- **[API Reference](docs/api-reference.md)** - Complete API documentation
-- **[Owner and Anchors](docs/owner-and-anchor-quick-reference.md)** - Scope association patterns
-
-## 🎯 Key Concepts
-
-- **CapabilityScope** - Entry point for all capability operations
-- **CapabilityScope<TOwner>** - Strongly-typed scope with immutable owner set at construction
-- **Composer** - Fluent builder for creating compositions
-- **Composition** - Immutable collection of capabilities attached to a subject
-- **Primary Capability** - Single "main" capability per subject (via `IPrimaryCapability`)
-- **Owner & Anchors** - Associate scopes with well-known subjects for enhanced composability
-- **Registry** - Optional centralized management of compositions
-
----
 ## Contributing & Versioning
 
 - SemVer (additive MINOR, breaking MAJOR)
@@ -176,4 +64,3 @@ using var typedScope = new CapabilityScope<ConfigManager>(config, options);
 This project is licensed under the [Apache License, Version 2.0](LICENSE). See [`NOTICE`](NOTICE) for attribution.
 
 "Cocoar" and related marks are trademarks of COCOAR e.U. Use of the name in forks or derivatives should preserve attribution and avoid implying official endorsement. See [TRADEMARKS](TRADEMARKS.md) for permitted and restricted uses.
-

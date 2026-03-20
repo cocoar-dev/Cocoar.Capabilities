@@ -5,11 +5,6 @@
 ### Fixed
 - **ScopeOwnerApi**: `Get<T>()` now returns `null` instead of throwing when the owner is not set, has been garbage collected, or is not of the expected type. `GetOrThrow<T>()` retains the throwing behavior and is no longer just an alias for `Get<T>()`.
 - **ScopeAnchorsApi**: `Get<T>()` and `Get(string)` now return `null` instead of throwing when the anchor is not set or has been garbage collected. `GetOrThrow<T>()` and `GetOrThrow(string)` retain the throwing behavior.
-- Internal callers (`ComposeFor<T>()`, `GetRequiredCompositionFor<T>()`, `GetRequiredComposerFor<T>()`, and named anchor equivalents) updated to use `GetOrThrow` for correct fail-fast semantics.
-
-### Added
-- VitePress documentation site (`website/`)
-- `GetSemanticTests` — dedicated tests verifying the semantic contract between `Get` (returns null), `GetOrThrow` (throws), and `TryGet` (out-parameter) across Owner and Anchors APIs
 
 ## [1.2.0] - 2025-11-03
 
@@ -32,19 +27,16 @@
 - **Enhanced ScopeAnchorsApi**: Consistent API surface with try-pattern, required, and *For methods
   - Added `ComposeFor<T>()` - new preferred method name with obsolete alias on `Compose<T>()`
   - Added `GetCompositionFor<T>()` - new preferred method name with obsolete alias on `GetComposition<T>()`
-  - Added `TryGetCompositionFor<T>(out Composition?)` and `TryGetComposition(string, out Composition?)` for safe composition retrieval
+  - Added `TryGetCompositionFor<T>()` and `TryGetComposition(string)` for safe composition retrieval
   - Added `GetRequiredCompositionFor<T>()` and `GetRequiredComposition(string)` that throw when composition doesn't exist
-  - Added `GetComposerFor<T>()`, `GetComposer(string)` for getting composers from registry (returns null if not found)
-  - Added `TryGetComposerFor<T>(out Composer?)`, `TryGetComposer(string, out Composer?)` for try-pattern composer retrieval
+  - Added `GetComposerFor<T>()`, `GetComposer(string)` for getting composers from registry
+  - Added `TryGetComposerFor<T>()`, `TryGetComposer(string)` for try-pattern composer retrieval
   - Added `GetRequiredComposerFor<T>()`, `GetRequiredComposer(string)` that throw when composer not in registry
-  - Obsolete attributes on old method names for smooth migration (`Compose<T>()` → `ComposeFor<T>()`, etc.)
   - Complete API parity between Owner and Anchors APIs
 
 ### Documentation
 - Updated README with strongly-typed scope examples
-- Added comprehensive API documentation for `CapabilityScope<TOwner>` and `ScopeOwnerApi<TOwner>`
-- Added "Strongly-Typed Scopes" and "Domain-Specific Typed Scopes" examples in docs/examples.md
-- Updated API reference with new ScopeAnchorsApi methods
+- Added comprehensive API documentation
 
 ## [1.1.0] - 2025-10-26
 
@@ -55,15 +47,12 @@
   - Owner safety: `Set()` throws if owner already set, `Replace()` for explicit replacement
   - Weak reference storage prevents memory leaks
   - Fluent chaining with `.Scope` property to return to scope
-  - Direct composition via `Owner.Compose()` and `Anchors.Compose<T>()`
-  - Methods: `Set`, `Replace`, `Get`, `GetOrThrow`, `TryGet`, `Compose`, `GetComposition`
-  - Comprehensive documentation in ADR, README, API reference, and quick reference guide
+  - Direct composition via `Owner.Compose()` and `Anchors.ComposeFor<T>()`
 - **Using* Extension Methods**: Fluent convenience methods for inline capability usage
   - `UsingFirst<T>()`, `UsingFirstOrDefault<T>()` - Use first capability with action or function
   - `UsingLast<T>()`, `UsingLastOrDefault<T>()` - Use last capability with action or function
   - `UsingEach<T>()` - Execute action or function for each capability
   - `UsingAll<T>()` - Execute action or function with full collection
-  - All methods maintain semantic consistency with existing `Get*` methods
   - Action-based overloads return `IComposition` for chaining
   - Function-based overloads return results directly
 
@@ -80,11 +69,9 @@
 - Try-Add pattern with `TryAdd()` and `TryAddAs()` methods
 - Multiple contract registration with tuple syntax `AddAs<(IContract1, IContract2)>()`
 - Zero-allocation `ForEach()` extension method for `IReadOnlyList<T>`
-- Comprehensive documentation with examples and API reference
 
 ### Technical
 - Target framework: .NET 8.0
 - Thread-safe immutable compositions
 - High-performance array-backed storage
 - Source Link support for debugging
-
